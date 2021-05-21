@@ -1,7 +1,7 @@
 # network-automation
 
 
-Using Netmiko to automate switch and router backups and administration
+Using Netmiko to automate switch and router backups
 
 ## Usage:
 
