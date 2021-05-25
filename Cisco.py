@@ -1,5 +1,5 @@
-from netmiko import Netmiko
-from netmiko import ConnectHandler
+from netmiko import Netmiko,ConnectHandler
+import getpass
 
 SW1 = {
     'device_type': 'cisco_ios',
@@ -12,6 +12,9 @@ SW1 = {
 devices = [SW1] 
 
 for device in devices: 
+    (device["username"]) = getpass.getpass(prompt='Enter SSH Username: ')
+    (device["password"]) = getpass.getpass(prompt="Enter SSH Password: ")
+    (device["secret"]) = getpass.getpass(prompt="Enter Secret Password: ")
 
     net_connect = ConnectHandler(**device) # connects to every device 
     net_connect.enable()  # runs the enable command 

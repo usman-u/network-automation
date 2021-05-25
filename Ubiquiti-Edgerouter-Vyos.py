@@ -1,5 +1,5 @@
-from netmiko import Netmiko
-from netmiko import ConnectHandler
+from netmiko import Netmiko,ConnectHandler
+import getpass
 
 
 ERX = {
@@ -11,10 +11,12 @@ ERX = {
 
 devices = [ERX]
 
-for x in devices:
-    hostname = (x["host"])
-
-    net_connect = ConnectHandler(**x)    # x is the current index/device
+for device in devices:
+    (device["username"]) = getpass.getpass(prompt='Enter SSH Username: ')
+    (device["password"]) = getpass.getpass(prompt="Enter SSH Password: ")
+    hostname = (device["host"])
+    
+    net_connect = ConnectHandler(**device)    # x is the current index/device
     shver = net_connect.send_command('show version')                             # sends ssh
     shconfig = net_connect.send_command('show configuration')                    # commands
     shconfigcommands = net_connect.send_command('show configuration commands')   # via netmiko
