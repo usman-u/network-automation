@@ -1,5 +1,5 @@
 from netmiko import Netmiko,ConnectHandler
-import getpass
+import getpass, datetime
 
 SW1 = {
     'device_type': 'cisco_ios',
@@ -12,6 +12,9 @@ SW1 = {
 devices = [SW1] 
 
 for device in devices: 
+    time = datetime.datetime.now()
+    string_time = str(time)
+
     (device["username"]) = getpass.getpass(prompt='Enter SSH Username: ')
     (device["password"]) = getpass.getpass(prompt="Enter SSH Password: ")
     (device["secret"]) = getpass.getpass(prompt="Enter Secret Password: ")
@@ -28,9 +31,9 @@ for device in devices:
     hostname = sh_version[0]['hostname']  # gets data from initial dict
     IPaddr = device['host']
 
-    print("Backing up " + hostname) 
+    print("Backing up " + hostname + string_time) 
 
-    fileName = (hostname + "-" + IPaddr + "-" + "Backup")      # generates filename from initial dict
+    fileName = (hostname + "-" + IPaddr + "-" + "Backup" + " at " + string_time)      # generates filename from initial dict
     contents = (show_run +"\n"+ show_vlan +"\n"+ sh_ints +"\n"+ sh_ints_desc) 
 
     f = open((fileName), "w") # opens in (w)rite mode, to overwrite existing contents, instead of (a)ppend 

@@ -1,0 +1,1025 @@
+Version:      v2.0.9-hotfix.1
+Build ID:     5371034
+Build on:     01/22/21 10:14
+Copyright:    2012-2020 Ubiquiti Networks, Inc.
+HW model:     EdgeRouter X 5-Port
+HW S/N:       7483C2F5DAD6
+Uptime:       17:02:08 up 10 days, 23:06,  1 user,  load average: 1.00, 1.01, 1.00
+firewall {
+    all-ping enable
+    broadcast-ping disable
+    group {
+        network-group LAN_NETWORKS {
+            description "RFC1918 Range"
+            network 192.168.0.0/16
+            network 172.16.0.0/12
+            network 10.0.0.0/8
+        }
+    }
+    ipv6-name WANv6_IN {
+        default-action drop
+        description "WAN inbound traffic forwarded to LAN"
+        enable-default-log
+        rule 10 {
+            action accept
+            description "Allow established/related sessions"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 20 {
+            action drop
+            description "Drop invalid state"
+            state {
+                invalid enable
+            }
+        }
+    }
+    ipv6-name WANv6_LOCAL {
+        default-action drop
+        description "WAN inbound traffic to the router"
+        enable-default-log
+        rule 10 {
+            action accept
+            description "Allow established/related sessions"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 20 {
+            action drop
+            description "Drop invalid state"
+            state {
+                invalid enable
+            }
+        }
+        rule 30 {
+            action accept
+            description "Allow IPv6 icmp"
+            protocol ipv6-icmp
+        }
+        rule 40 {
+            action accept
+            description "allow dhcpv6"
+            destination {
+                port 546
+            }
+            protocol udp
+            source {
+                port 547
+            }
+        }
+    }
+    ipv6-receive-redirects disable
+    ipv6-src-route disable
+    ip-src-route disable
+    log-martians enable
+    name IOT_IN {
+        default-action accept
+        description "IOT to lan/wan"
+        rule 10 {
+            action accept
+            description "allow pihole dns"
+            destination {
+                address 192.168.0.100
+                port 53
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 20 {
+            action accept
+            description "allow establshed related"
+            log disable
+            protocol all
+            state {
+                established enable
+                invalid disable
+                new disable
+                related enable
+            }
+        }
+        rule 30 {
+            action accept
+            description "allow iperf"
+            destination {
+                address 192.168.0.243
+                port 5201
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 40 {
+            action accept
+            description "allow plex"
+            destination {
+                address 10.0.10.6
+                port 32400
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 50 {
+            action accept
+            description "Allow all to .100 server"
+            destination {
+                address 192.168.0.100
+            }
+            log enable
+            protocol all
+        }
+        rule 60 {
+            action accept
+            description "Allow to .210 server"
+            destination {
+                address 192.168.0.210
+            }
+            log enable
+            protocol all
+        }
+        rule 70 {
+            action drop
+            description "drop iot to lan"
+            destination {
+                group {
+                    network-group LAN_NETWORKS
+                }
+            }
+            log disable
+            protocol all
+        }
+    }
+    name IOT_LOCAL {
+        default-action drop
+        description "IOT to router"
+        rule 10 {
+            action accept
+            description "allow dns"
+            destination {
+                port 53
+            }
+            log disable
+            protocol tcp_udp
+        }
+        rule 20 {
+            action accept
+            description "allow dhcp"
+            destination {
+                port 67
+            }
+            log disable
+            protocol udp
+        }
+    }
+    name Servers_IN {
+        default-action accept
+        description "IOT to lan/wan"
+        rule 10 {
+            action accept
+            description "allow pihole dns"
+            destination {
+                address 192.168.0.100
+                port 53
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 20 {
+            action accept
+            description "allow establshed related"
+            log disable
+            protocol all
+            state {
+                established enable
+                invalid disable
+                new disable
+                related enable
+            }
+        }
+        rule 30 {
+            action accept
+            description "allow iperf"
+            destination {
+                address 192.168.0.243
+                port 5201
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 40 {
+            action accept
+            description "allow plex"
+            destination {
+                address 192.168.0.11
+                port 32400
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 50 {
+            action accept
+            description "Allow all to .100 server"
+            destination {
+                address 192.168.0.100
+            }
+            log enable
+            protocol all
+        }
+        rule 60 {
+            action accept
+            description "Allow to .210 server"
+            destination {
+                address 192.168.0.210
+            }
+            log enable
+            protocol all
+        }
+        rule 70 {
+            action drop
+            description "drop iot to lan"
+            destination {
+                group {
+                    network-group LAN_NETWORKS
+                }
+            }
+            log disable
+            protocol all
+        }
+    }
+    name Servers_LOCAL {
+        default-action drop
+        description "IOT to router"
+        rule 10 {
+            action accept
+            description "allow dns"
+            destination {
+                port 53
+            }
+            log disable
+            protocol tcp_udp
+        }
+        rule 20 {
+            action accept
+            description "allow dhcp"
+            destination {
+                port 67
+            }
+            log disable
+            protocol udp
+        }
+    }
+    name WAN_IN {
+        default-action drop
+        description "WAN to internal"
+        rule 10 {
+            action accept
+            description "Allow established/related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 20 {
+            action accept
+            description "WireGuard VPN"
+            destination {
+                address 192.168.0.100
+                port 51821
+            }
+            log disable
+            protocol udp
+        }
+        rule 30 {
+            action accept
+            description "Port 443 Reverse Proxy"
+            destination {
+                address 192.168.0.100
+                port 1443
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 40 {
+            action accept
+            description "Port 80Reverse Proxy"
+            destination {
+                address 192.168.0.100
+                port 180
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 50 {
+            action accept
+            description Plex
+            destination {
+                address 10.0.10.6
+                port 32400
+            }
+            log enable
+            protocol tcp_udp
+        }
+        rule 60 {
+            action drop
+            description "Drop invalid state"
+            state {
+                invalid enable
+            }
+        }
+    }
+    name WAN_LOCAL {
+        default-action drop
+        description "WAN to router"
+        rule 10 {
+            action accept
+            description "Allow established/related"
+            state {
+                established enable
+                related enable
+            }
+        }
+        rule 20 {
+            action drop
+            description "Drop invalid state"
+            state {
+                invalid enable
+            }
+        }
+    }
+    receive-redirects disable
+    send-redirects enable
+    source-validation disable
+    syn-cookies enable
+}
+interfaces {
+    ethernet eth0 {
+        address dhcp
+        description Internet
+        duplex auto
+        firewall {
+            in {
+                ipv6-name WANv6_IN
+                name WAN_IN
+            }
+            local {
+                ipv6-name WANv6_LOCAL
+                name WAN_LOCAL
+            }
+        }
+        speed auto
+    }
+    ethernet eth1 {
+        description Local
+        duplex auto
+        speed auto
+    }
+    ethernet eth2 {
+        description Local
+        duplex auto
+        speed auto
+    }
+    ethernet eth3 {
+        address 172.16.0.1/24
+        description Local
+        duplex auto
+        speed auto
+    }
+    ethernet eth4 {
+        description Local
+        duplex auto
+        poe {
+            output off
+        }
+        speed auto
+    }
+    loopback lo {
+    }
+    switch switch0 {
+        description Local
+        mtu 1500
+        switch-port {
+            interface eth1 {
+                vlan {
+                    pvid 1
+                }
+            }
+            interface eth2 {
+                vlan {
+                    pvid 1
+                    vid 10
+                    vid 20
+                }
+            }
+            interface eth4 {
+                vlan {
+                    pvid 1
+                    vid 20
+                    vid 10
+                }
+            }
+            vlan-aware enable
+        }
+        vif 1 {
+            address 192.168.0.1/24
+            description Main
+        }
+        vif 10 {
+            address 10.0.10.1/24
+            description Servers
+        }
+        vif 20 {
+            address 10.0.20.1/24
+            description IoT
+            firewall {
+                in {
+                    name IOT_IN
+                }
+                local {
+                    name IOT_LOCAL
+                }
+            }
+        }
+        vif 30 {
+            address 10.0.30.1/24
+            description HOME
+            mtu 1500
+        }
+    }
+}
+port-forward {
+    auto-firewall enable
+    hairpin-nat enable
+    lan-interface switch0
+    wan-interface eth0
+}
+protocols {
+    static {
+    }
+}
+service {
+    dhcp-server {
+        disabled false
+        hostfile-update disable
+        shared-network-name IoT-VLAN {
+            authoritative disable
+            subnet 10.0.20.0/24 {
+                default-router 10.0.20.1
+                dns-server 192.168.0.210
+                dns-server 192.168.0.100
+                lease 86400
+                start 10.0.20.2 {
+                    stop 10.0.20.254
+                }
+            }
+        }
+        shared-network-name LAN {
+            authoritative enable
+            subnet 192.168.0.0/24 {
+                default-router 192.168.0.1
+                dns-server 192.168.0.210
+                dns-server 192.168.0.100
+                lease 86400
+                start 192.168.0.38 {
+                    stop 192.168.0.243
+                }
+                static-mapping Main-House-AP {
+                    ip-address 192.168.0.42
+                    mac-address e0:63:da:06:67:bb
+                }
+                static-mapping Out-House-AP {
+                    ip-address 192.168.0.41
+                    mac-address e0:63:da:06:66:3b
+                }
+                static-mapping SERVER-HP {
+                    ip-address 192.168.0.100
+                    mac-address 00:26:55:43:70:e8
+                }
+                static-mapping usman-hp {
+                    ip-address 192.168.0.210
+                    mac-address ac:e2:d3:4d:e2:eb
+                }
+            }
+        }
+        shared-network-name SERVERS {
+            authoritative disable
+            subnet 10.0.10.0/24 {
+                default-router 10.0.10.1
+                dns-server 192.168.0.210
+                dns-server 192.168.0.100
+                lease 86400
+                start 10.0.10.5 {
+                    stop 10.0.10.254
+                }
+                static-mapping usman-hp {
+                    ip-address 10.0.10.5
+                    mac-address ac:e2:d3:4d:e2:eb
+                }
+            }
+        }
+        static-arp disable
+        use-dnsmasq disable
+    }
+    dns {
+        forwarding {
+            cache-size 150
+            listen-on switch0.20
+            listen-on switch0.1
+            listen-on switch0.10
+        }
+    }
+    gui {
+        http-port 80
+        https-port 443
+        older-ciphers enable
+    }
+    mdns {
+        repeater {
+            interface switch0.20
+            interface switch0.1
+        }
+    }
+    nat {
+        rule 2 {
+            description "Port 443 Reverse Proxy"
+            destination {
+                group {
+                    address-group ADDRv4_eth0
+                }
+                port 443
+            }
+            inbound-interface eth0
+            inside-address {
+                address 192.168.0.100
+                port 1443
+            }
+            log disable
+            protocol tcp_udp
+            type destination
+        }
+        rule 4 {
+            description Plex
+            destination {
+                group {
+                    address-group ADDRv4_eth0
+                }
+                port 32400
+            }
+            inbound-interface eth0
+            inside-address {
+                address 10.0.10.6
+                port 32400
+            }
+            log disable
+            protocol tcp_udp
+            type destination
+        }
+        rule 6 {
+            description "WireGuard VPN "
+            destination {
+                group {
+                    address-group ADDRv4_eth0
+                }
+                port 51821
+            }
+            inbound-interface eth0
+            inside-address {
+                address 192.168.0.100
+                port 51821
+            }
+            log disable
+            protocol tcp_udp
+            type destination
+        }
+        rule 7 {
+            description "Port 80Reverse Proxy"
+            destination {
+                group {
+                    address-group ADDRv4_eth0
+                }
+                port 80
+            }
+            inbound-interface eth0
+            inside-address {
+                address 192.168.0.100
+                port 180
+            }
+            log disable
+            protocol tcp_udp
+            type destination
+        }
+        rule 5010 {
+            description "masquerade for WAN"
+            outbound-interface eth0
+            type masquerade
+        }
+    }
+    ssh {
+        port 22
+        protocol-version v2
+    }
+    unms {
+        disable
+    }
+}
+system {
+    analytics-handler {
+        send-analytics-report false
+    }
+    crash-handler {
+        send-crash-report false
+    }
+    host-name ER-X
+    login {
+        user test {
+            authentication {
+                encrypted-password ****************
+                plaintext-password ****************
+            }
+            level admin
+        }
+        user usman {
+            authentication {
+                encrypted-password ****************
+                plaintext-password ****************
+            }
+            level admin
+        }
+    }
+    ntp {
+        server 0.ubnt.pool.ntp.org {
+        }
+        server 1.ubnt.pool.ntp.org {
+        }
+        server 2.ubnt.pool.ntp.org {
+        }
+        server 3.ubnt.pool.ntp.org {
+        }
+    }
+    offload {
+        hwnat enable
+        ipsec enable
+    }
+    syslog {
+        global {
+            facility all {
+                level notice
+            }
+            facility protocols {
+                level debug
+            }
+        }
+    }
+    time-zone UTC
+    traffic-analysis {
+        dpi disable
+        export disable
+    }
+}
+set firewall all-ping enable
+set firewall broadcast-ping disable
+set firewall group network-group LAN_NETWORKS description 'RFC1918 Range'
+set firewall group network-group LAN_NETWORKS network 192.168.0.0/16
+set firewall group network-group LAN_NETWORKS network 172.16.0.0/12
+set firewall group network-group LAN_NETWORKS network 10.0.0.0/8
+set firewall ipv6-name WANv6_IN default-action drop
+set firewall ipv6-name WANv6_IN description 'WAN inbound traffic forwarded to LAN'
+set firewall ipv6-name WANv6_IN enable-default-log
+set firewall ipv6-name WANv6_IN rule 10 action accept
+set firewall ipv6-name WANv6_IN rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WANv6_IN rule 10 state established enable
+set firewall ipv6-name WANv6_IN rule 10 state related enable
+set firewall ipv6-name WANv6_IN rule 20 action drop
+set firewall ipv6-name WANv6_IN rule 20 description 'Drop invalid state'
+set firewall ipv6-name WANv6_IN rule 20 state invalid enable
+set firewall ipv6-name WANv6_LOCAL default-action drop
+set firewall ipv6-name WANv6_LOCAL description 'WAN inbound traffic to the router'
+set firewall ipv6-name WANv6_LOCAL enable-default-log
+set firewall ipv6-name WANv6_LOCAL rule 10 action accept
+set firewall ipv6-name WANv6_LOCAL rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WANv6_LOCAL rule 10 state established enable
+set firewall ipv6-name WANv6_LOCAL rule 10 state related enable
+set firewall ipv6-name WANv6_LOCAL rule 20 action drop
+set firewall ipv6-name WANv6_LOCAL rule 20 description 'Drop invalid state'
+set firewall ipv6-name WANv6_LOCAL rule 20 state invalid enable
+set firewall ipv6-name WANv6_LOCAL rule 30 action accept
+set firewall ipv6-name WANv6_LOCAL rule 30 description 'Allow IPv6 icmp'
+set firewall ipv6-name WANv6_LOCAL rule 30 protocol ipv6-icmp
+set firewall ipv6-name WANv6_LOCAL rule 40 action accept
+set firewall ipv6-name WANv6_LOCAL rule 40 description 'allow dhcpv6'
+set firewall ipv6-name WANv6_LOCAL rule 40 destination port 546
+set firewall ipv6-name WANv6_LOCAL rule 40 protocol udp
+set firewall ipv6-name WANv6_LOCAL rule 40 source port 547
+set firewall ipv6-receive-redirects disable
+set firewall ipv6-src-route disable
+set firewall ip-src-route disable
+set firewall log-martians enable
+set firewall name IOT_IN default-action accept
+set firewall name IOT_IN description 'IOT to lan/wan'
+set firewall name IOT_IN rule 10 action accept
+set firewall name IOT_IN rule 10 description 'allow pihole dns'
+set firewall name IOT_IN rule 10 destination address 192.168.0.100
+set firewall name IOT_IN rule 10 destination port 53
+set firewall name IOT_IN rule 10 log enable
+set firewall name IOT_IN rule 10 protocol tcp_udp
+set firewall name IOT_IN rule 20 action accept
+set firewall name IOT_IN rule 20 description 'allow establshed related'
+set firewall name IOT_IN rule 20 log disable
+set firewall name IOT_IN rule 20 protocol all
+set firewall name IOT_IN rule 20 state established enable
+set firewall name IOT_IN rule 20 state invalid disable
+set firewall name IOT_IN rule 20 state new disable
+set firewall name IOT_IN rule 20 state related enable
+set firewall name IOT_IN rule 30 action accept
+set firewall name IOT_IN rule 30 description 'allow iperf'
+set firewall name IOT_IN rule 30 destination address 192.168.0.243
+set firewall name IOT_IN rule 30 destination port 5201
+set firewall name IOT_IN rule 30 log enable
+set firewall name IOT_IN rule 30 protocol tcp_udp
+set firewall name IOT_IN rule 40 action accept
+set firewall name IOT_IN rule 40 description 'allow plex'
+set firewall name IOT_IN rule 40 destination address 10.0.10.6
+set firewall name IOT_IN rule 40 destination port 32400
+set firewall name IOT_IN rule 40 log enable
+set firewall name IOT_IN rule 40 protocol tcp_udp
+set firewall name IOT_IN rule 50 action accept
+set firewall name IOT_IN rule 50 description 'Allow all to .100 server'
+set firewall name IOT_IN rule 50 destination address 192.168.0.100
+set firewall name IOT_IN rule 50 log enable
+set firewall name IOT_IN rule 50 protocol all
+set firewall name IOT_IN rule 60 action accept
+set firewall name IOT_IN rule 60 description 'Allow to .210 server'
+set firewall name IOT_IN rule 60 destination address 192.168.0.210
+set firewall name IOT_IN rule 60 log enable
+set firewall name IOT_IN rule 60 protocol all
+set firewall name IOT_IN rule 70 action drop
+set firewall name IOT_IN rule 70 description 'drop iot to lan'
+set firewall name IOT_IN rule 70 destination group network-group LAN_NETWORKS
+set firewall name IOT_IN rule 70 log disable
+set firewall name IOT_IN rule 70 protocol all
+set firewall name IOT_LOCAL default-action drop
+set firewall name IOT_LOCAL description 'IOT to router'
+set firewall name IOT_LOCAL rule 10 action accept
+set firewall name IOT_LOCAL rule 10 description 'allow dns'
+set firewall name IOT_LOCAL rule 10 destination port 53
+set firewall name IOT_LOCAL rule 10 log disable
+set firewall name IOT_LOCAL rule 10 protocol tcp_udp
+set firewall name IOT_LOCAL rule 20 action accept
+set firewall name IOT_LOCAL rule 20 description 'allow dhcp'
+set firewall name IOT_LOCAL rule 20 destination port 67
+set firewall name IOT_LOCAL rule 20 log disable
+set firewall name IOT_LOCAL rule 20 protocol udp
+set firewall name Servers_IN default-action accept
+set firewall name Servers_IN description 'IOT to lan/wan'
+set firewall name Servers_IN rule 10 action accept
+set firewall name Servers_IN rule 10 description 'allow pihole dns'
+set firewall name Servers_IN rule 10 destination address 192.168.0.100
+set firewall name Servers_IN rule 10 destination port 53
+set firewall name Servers_IN rule 10 log enable
+set firewall name Servers_IN rule 10 protocol tcp_udp
+set firewall name Servers_IN rule 20 action accept
+set firewall name Servers_IN rule 20 description 'allow establshed related'
+set firewall name Servers_IN rule 20 log disable
+set firewall name Servers_IN rule 20 protocol all
+set firewall name Servers_IN rule 20 state established enable
+set firewall name Servers_IN rule 20 state invalid disable
+set firewall name Servers_IN rule 20 state new disable
+set firewall name Servers_IN rule 20 state related enable
+set firewall name Servers_IN rule 30 action accept
+set firewall name Servers_IN rule 30 description 'allow iperf'
+set firewall name Servers_IN rule 30 destination address 192.168.0.243
+set firewall name Servers_IN rule 30 destination port 5201
+set firewall name Servers_IN rule 30 log enable
+set firewall name Servers_IN rule 30 protocol tcp_udp
+set firewall name Servers_IN rule 40 action accept
+set firewall name Servers_IN rule 40 description 'allow plex'
+set firewall name Servers_IN rule 40 destination address 192.168.0.11
+set firewall name Servers_IN rule 40 destination port 32400
+set firewall name Servers_IN rule 40 log enable
+set firewall name Servers_IN rule 40 protocol tcp_udp
+set firewall name Servers_IN rule 50 action accept
+set firewall name Servers_IN rule 50 description 'Allow all to .100 server'
+set firewall name Servers_IN rule 50 destination address 192.168.0.100
+set firewall name Servers_IN rule 50 log enable
+set firewall name Servers_IN rule 50 protocol all
+set firewall name Servers_IN rule 60 action accept
+set firewall name Servers_IN rule 60 description 'Allow to .210 server'
+set firewall name Servers_IN rule 60 destination address 192.168.0.210
+set firewall name Servers_IN rule 60 log enable
+set firewall name Servers_IN rule 60 protocol all
+set firewall name Servers_IN rule 70 action drop
+set firewall name Servers_IN rule 70 description 'drop iot to lan'
+set firewall name Servers_IN rule 70 destination group network-group LAN_NETWORKS
+set firewall name Servers_IN rule 70 log disable
+set firewall name Servers_IN rule 70 protocol all
+set firewall name Servers_LOCAL default-action drop
+set firewall name Servers_LOCAL description 'IOT to router'
+set firewall name Servers_LOCAL rule 10 action accept
+set firewall name Servers_LOCAL rule 10 description 'allow dns'
+set firewall name Servers_LOCAL rule 10 destination port 53
+set firewall name Servers_LOCAL rule 10 log disable
+set firewall name Servers_LOCAL rule 10 protocol tcp_udp
+set firewall name Servers_LOCAL rule 20 action accept
+set firewall name Servers_LOCAL rule 20 description 'allow dhcp'
+set firewall name Servers_LOCAL rule 20 destination port 67
+set firewall name Servers_LOCAL rule 20 log disable
+set firewall name Servers_LOCAL rule 20 protocol udp
+set firewall name WAN_IN default-action drop
+set firewall name WAN_IN description 'WAN to internal'
+set firewall name WAN_IN rule 10 action accept
+set firewall name WAN_IN rule 10 description 'Allow established/related'
+set firewall name WAN_IN rule 10 state established enable
+set firewall name WAN_IN rule 10 state related enable
+set firewall name WAN_IN rule 20 action accept
+set firewall name WAN_IN rule 20 description 'WireGuard VPN'
+set firewall name WAN_IN rule 20 destination address 192.168.0.100
+set firewall name WAN_IN rule 20 destination port 51821
+set firewall name WAN_IN rule 20 log disable
+set firewall name WAN_IN rule 20 protocol udp
+set firewall name WAN_IN rule 30 action accept
+set firewall name WAN_IN rule 30 description 'Port 443 Reverse Proxy'
+set firewall name WAN_IN rule 30 destination address 192.168.0.100
+set firewall name WAN_IN rule 30 destination port 1443
+set firewall name WAN_IN rule 30 log enable
+set firewall name WAN_IN rule 30 protocol tcp_udp
+set firewall name WAN_IN rule 40 action accept
+set firewall name WAN_IN rule 40 description 'Port 80Reverse Proxy'
+set firewall name WAN_IN rule 40 destination address 192.168.0.100
+set firewall name WAN_IN rule 40 destination port 180
+set firewall name WAN_IN rule 40 log enable
+set firewall name WAN_IN rule 40 protocol tcp_udp
+set firewall name WAN_IN rule 50 action accept
+set firewall name WAN_IN rule 50 description Plex
+set firewall name WAN_IN rule 50 destination address 10.0.10.6
+set firewall name WAN_IN rule 50 destination port 32400
+set firewall name WAN_IN rule 50 log enable
+set firewall name WAN_IN rule 50 protocol tcp_udp
+set firewall name WAN_IN rule 60 action drop
+set firewall name WAN_IN rule 60 description 'Drop invalid state'
+set firewall name WAN_IN rule 60 state invalid enable
+set firewall name WAN_LOCAL default-action drop
+set firewall name WAN_LOCAL description 'WAN to router'
+set firewall name WAN_LOCAL rule 10 action accept
+set firewall name WAN_LOCAL rule 10 description 'Allow established/related'
+set firewall name WAN_LOCAL rule 10 state established enable
+set firewall name WAN_LOCAL rule 10 state related enable
+set firewall name WAN_LOCAL rule 20 action drop
+set firewall name WAN_LOCAL rule 20 description 'Drop invalid state'
+set firewall name WAN_LOCAL rule 20 state invalid enable
+set firewall receive-redirects disable
+set firewall send-redirects enable
+set firewall source-validation disable
+set firewall syn-cookies enable
+set interfaces ethernet eth0 address dhcp
+set interfaces ethernet eth0 description Internet
+set interfaces ethernet eth0 duplex auto
+set interfaces ethernet eth0 firewall in ipv6-name WANv6_IN
+set interfaces ethernet eth0 firewall in name WAN_IN
+set interfaces ethernet eth0 firewall local ipv6-name WANv6_LOCAL
+set interfaces ethernet eth0 firewall local name WAN_LOCAL
+set interfaces ethernet eth0 speed auto
+set interfaces ethernet eth1 description Local
+set interfaces ethernet eth1 duplex auto
+set interfaces ethernet eth1 speed auto
+set interfaces ethernet eth2 description Local
+set interfaces ethernet eth2 duplex auto
+set interfaces ethernet eth2 speed auto
+set interfaces ethernet eth3 address 172.16.0.1/24
+set interfaces ethernet eth3 description Local
+set interfaces ethernet eth3 duplex auto
+set interfaces ethernet eth3 speed auto
+set interfaces ethernet eth4 description Local
+set interfaces ethernet eth4 duplex auto
+set interfaces ethernet eth4 poe output off
+set interfaces ethernet eth4 speed auto
+set interfaces loopback lo
+set interfaces switch switch0 description Local
+set interfaces switch switch0 mtu 1500
+set interfaces switch switch0 switch-port interface eth1 vlan pvid 1
+set interfaces switch switch0 switch-port interface eth2 vlan pvid 1
+set interfaces switch switch0 switch-port interface eth2 vlan vid 10
+set interfaces switch switch0 switch-port interface eth2 vlan vid 20
+set interfaces switch switch0 switch-port interface eth4 vlan pvid 1
+set interfaces switch switch0 switch-port interface eth4 vlan vid 20
+set interfaces switch switch0 switch-port interface eth4 vlan vid 10
+set interfaces switch switch0 switch-port vlan-aware enable
+set interfaces switch switch0 vif 1 address 192.168.0.1/24
+set interfaces switch switch0 vif 1 description Main
+set interfaces switch switch0 vif 10 address 10.0.10.1/24
+set interfaces switch switch0 vif 10 description Servers
+set interfaces switch switch0 vif 20 address 10.0.20.1/24
+set interfaces switch switch0 vif 20 description IoT
+set interfaces switch switch0 vif 20 firewall in name IOT_IN
+set interfaces switch switch0 vif 20 firewall local name IOT_LOCAL
+set interfaces switch switch0 vif 30 address 10.0.30.1/24
+set interfaces switch switch0 vif 30 description HOME
+set interfaces switch switch0 vif 30 mtu 1500
+set port-forward auto-firewall enable
+set port-forward hairpin-nat enable
+set port-forward lan-interface switch0
+set port-forward wan-interface eth0
+set protocols static
+set service dhcp-server disabled false
+set service dhcp-server hostfile-update disable
+set service dhcp-server shared-network-name IoT-VLAN authoritative disable
+set service dhcp-server shared-network-name IoT-VLAN subnet 10.0.20.0/24 default-router 10.0.20.1
+set service dhcp-server shared-network-name IoT-VLAN subnet 10.0.20.0/24 dns-server 192.168.0.210
+set service dhcp-server shared-network-name IoT-VLAN subnet 10.0.20.0/24 dns-server 192.168.0.100
+set service dhcp-server shared-network-name IoT-VLAN subnet 10.0.20.0/24 lease 86400
+set service dhcp-server shared-network-name IoT-VLAN subnet 10.0.20.0/24 start 10.0.20.2 stop 10.0.20.254
+set service dhcp-server shared-network-name LAN authoritative enable
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 default-router 192.168.0.1
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 dns-server 192.168.0.210
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 dns-server 192.168.0.100
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 lease 86400
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 start 192.168.0.38 stop 192.168.0.243
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping Main-House-AP ip-address 192.168.0.42
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping Main-House-AP mac-address 'e0:63:da:06:67:bb'
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping Out-House-AP ip-address 192.168.0.41
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping Out-House-AP mac-address 'e0:63:da:06:66:3b'
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping SERVER-HP ip-address 192.168.0.100
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping SERVER-HP mac-address '00:26:55:43:70:e8'
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping usman-hp ip-address 192.168.0.210
+set service dhcp-server shared-network-name LAN subnet 192.168.0.0/24 static-mapping usman-hp mac-address 'ac:e2:d3:4d:e2:eb'
+set service dhcp-server shared-network-name SERVERS authoritative disable
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 default-router 10.0.10.1
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 dns-server 192.168.0.210
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 dns-server 192.168.0.100
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 lease 86400
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 start 10.0.10.5 stop 10.0.10.254
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 static-mapping usman-hp ip-address 10.0.10.5
+set service dhcp-server shared-network-name SERVERS subnet 10.0.10.0/24 static-mapping usman-hp mac-address 'ac:e2:d3:4d:e2:eb'
+set service dhcp-server static-arp disable
+set service dhcp-server use-dnsmasq disable
+set service dns forwarding cache-size 150
+set service dns forwarding listen-on switch0.20
+set service dns forwarding listen-on switch0.1
+set service dns forwarding listen-on switch0.10
+set service gui http-port 80
+set service gui https-port 443
+set service gui older-ciphers enable
+set service mdns repeater interface switch0.20
+set service mdns repeater interface switch0.1
+set service nat rule 2 description 'Port 443 Reverse Proxy'
+set service nat rule 2 destination group address-group ADDRv4_eth0
+set service nat rule 2 destination port 443
+set service nat rule 2 inbound-interface eth0
+set service nat rule 2 inside-address address 192.168.0.100
+set service nat rule 2 inside-address port 1443
+set service nat rule 2 log disable
+set service nat rule 2 protocol tcp_udp
+set service nat rule 2 type destination
+set service nat rule 4 description Plex
+set service nat rule 4 destination group address-group ADDRv4_eth0
+set service nat rule 4 destination port 32400
+set service nat rule 4 inbound-interface eth0
+set service nat rule 4 inside-address address 10.0.10.6
+set service nat rule 4 inside-address port 32400
+set service nat rule 4 log disable
+set service nat rule 4 protocol tcp_udp
+set service nat rule 4 type destination
+set service nat rule 6 description 'WireGuard VPN '
+set service nat rule 6 destination group address-group ADDRv4_eth0
+set service nat rule 6 destination port 51821
+set service nat rule 6 inbound-interface eth0
+set service nat rule 6 inside-address address 192.168.0.100
+set service nat rule 6 inside-address port 51821
+set service nat rule 6 log disable
+set service nat rule 6 protocol tcp_udp
+set service nat rule 6 type destination
+set service nat rule 7 description 'Port 80Reverse Proxy'
+set service nat rule 7 destination group address-group ADDRv4_eth0
+set service nat rule 7 destination port 80
+set service nat rule 7 inbound-interface eth0
+set service nat rule 7 inside-address address 192.168.0.100
+set service nat rule 7 inside-address port 180
+set service nat rule 7 log disable
+set service nat rule 7 protocol tcp_udp
+set service nat rule 7 type destination
+set service nat rule 5010 description 'masquerade for WAN'
+set service nat rule 5010 outbound-interface eth0
+set service nat rule 5010 type masquerade
+set service ssh port 22
+set service ssh protocol-version v2
+set service unms disable
+set system analytics-handler send-analytics-report false
+set system crash-handler send-crash-report false
+set system host-name ER-X
+set system login user test authentication encrypted-password '$5$FawZODHpyX8BbOR3$ZedbkIxRvAQNhAOvYOoeQgBfu7iyTibaJJsZtVHntD5'
+set system login user test authentication plaintext-password ''
+set system login user test level admin
+set system login user usman authentication encrypted-password '$5$K9Z.QdemAXwD/vlD$eXvj1JJjYT86maUINTp/KLz.iZ7.aSdT970NcBwl6A7'
+set system login user usman authentication plaintext-password ''
+set system login user usman level admin
+set system ntp server 0.ubnt.pool.ntp.org
+set system ntp server 1.ubnt.pool.ntp.org
+set system ntp server 2.ubnt.pool.ntp.org
+set system ntp server 3.ubnt.pool.ntp.org
+set system offload hwnat enable
+set system offload ipsec enable
+set system syslog global facility all level notice
+set system syslog global facility protocols level debug
+set system time-zone UTC
+set system traffic-analysis dpi disable
+set system traffic-analysis export disable

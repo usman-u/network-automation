@@ -1,0 +1,377 @@
+Building configuration...
+
+Current configuration : 4439 bytes
+!
+version 12.2
+no service pad
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service password-encryption
+!
+hostname Core-Switch
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 5 $1$2PD8$OKPPH9Jtzd/i/qAibxkH3.
+!
+username usman password 7 094E470E3A2D223C2C39377B7977
+no aaa new-model
+system mtu routing 1500
+ip subnet-zero
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+spanning-tree vlan 1,20,30 priority 24576
+!
+vlan internal allocation policy ascending
+!
+ip ssh authentication-retries 5
+ip ssh version 2
+!
+!
+interface GigabitEthernet0/1
+ description Trunk to TV Switch
+ switchport mode trunk
+ switchport nonegotiate
+!
+interface GigabitEthernet0/2
+ switchport mode trunk
+ spanning-tree portfast
+!
+interface GigabitEthernet0/3
+ switchport trunk allowed vlan 1,10,20
+ spanning-tree portfast
+!
+interface GigabitEthernet0/4
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/5
+ description Server
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/6
+ spanning-tree portfast
+!
+interface GigabitEthernet0/7
+ description NAS
+ switchport access vlan 10
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/8
+ spanning-tree portfast
+!
+interface GigabitEthernet0/9
+ description Server
+ spanning-tree portfast
+!
+interface GigabitEthernet0/10
+ spanning-tree portfast
+!
+interface GigabitEthernet0/11
+ description Laptop Server
+ switchport access vlan 10
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/12
+ spanning-tree portfast
+!
+interface GigabitEthernet0/13
+ description AP
+ switchport mode trunk
+!
+interface GigabitEthernet0/14
+ spanning-tree portfast
+!
+interface GigabitEthernet0/15
+ description POWERLINE
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/16
+ spanning-tree portfast
+!
+interface GigabitEthernet0/17
+ switchport mode access
+ switchport nonegotiate
+ speed 1000
+ spanning-tree portfast
+!
+interface GigabitEthernet0/18
+ switchport access vlan 10
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/19
+ switchport access vlan 10
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/20
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/21
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/22
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/23
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/24
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/25
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/26
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/27
+ switchport access vlan 20
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/28
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/29
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/30
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/31
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/32
+ switchport mode access
+ spanning-tree portfast
+!
+interface GigabitEthernet0/33
+!
+interface GigabitEthernet0/34
+!
+interface GigabitEthernet0/35
+!
+interface GigabitEthernet0/36
+!
+interface GigabitEthernet0/37
+!
+interface GigabitEthernet0/38
+!
+interface GigabitEthernet0/39
+!
+interface GigabitEthernet0/40
+!
+interface GigabitEthernet0/41
+ description Trunk To ER-X
+ switchport mode trunk
+!
+interface GigabitEthernet0/42
+!
+interface GigabitEthernet0/43
+!
+interface GigabitEthernet0/44
+!
+interface GigabitEthernet0/45
+ switchport mode trunk
+ media-type rj45
+!
+interface GigabitEthernet0/46
+ description OUTHOUSE
+ switchport mode trunk
+ media-type rj45
+ spanning-tree portfast trunk
+!
+interface GigabitEthernet0/47
+!
+interface GigabitEthernet0/48
+!
+interface Vlan1
+ ip address 192.168.0.5 255.255.255.0
+ no ip route-cache
+!
+ip default-gateway 192.168.0.1
+no ip http server
+no ip http secure-server
+!
+control-plane
+!
+!
+line con 0
+line vty 0 4
+ password 7 06160E325F59060B01
+ login local
+ transport input ssh
+line vty 5 14
+ password 7 06160E325F59060B01
+ login local
+ transport input ssh
+line vty 15
+ password 7 01030717481C091D25
+ login local
+ transport input ssh
+!
+end
+
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Gi0/2, Gi0/3, Gi0/5, Gi0/6, Gi0/8, Gi0/9, Gi0/10, Gi0/12, Gi0/13, Gi0/14, Gi0/16, Gi0/17, Gi0/20, Gi0/21, Gi0/22, Gi0/23, Gi0/24, Gi0/25, Gi0/26, Gi0/28, Gi0/29, Gi0/30, Gi0/31, Gi0/32, Gi0/33, Gi0/34, Gi0/35, Gi0/36, Gi0/37, Gi0/38, Gi0/39, Gi0/40, Gi0/42, Gi0/43, Gi0/44, Gi0/45, Gi0/47, Gi0/48
+10   Servers                          active    Gi0/7, Gi0/11, Gi0/18, Gi0/19
+20   IoT                              active    Gi0/4, Gi0/15, Gi0/27
+30   VLAN0030                         active    
+55   test-vlan                        active    
+1002 fddi-default                     act/unsup 
+1003 token-ring-default               act/unsup 
+1004 fddinet-default                  act/unsup 
+1005 trnet-default                    act/unsup 
+
+VLAN Type  SAID       MTU   Parent RingNo BridgeNo Stp  BrdgMode Trans1 Trans2
+---- ----- ---------- ----- ------ ------ -------- ---- -------- ------ ------
+1    enet  100001     1500  -      -      -        -    -        0      0   
+10   enet  100010     1500  -      -      -        -    -        0      0   
+20   enet  100020     1500  -      -      -        -    -        0      0   
+30   enet  100030     1500  -      -      -        -    -        0      0   
+55   enet  100055     1500  -      -      -        -    -        0      0   
+1002 fddi  101002     1500  -      -      -        -    -        0      0   
+1003 tr    101003     1500  -      -      -        -    -        0      0   
+1004 fdnet 101004     1500  -      -      -        ieee -        0      0   
+1005 trnet 101005     1500  -      -      -        ibm  -        0      0   
+
+Remote SPAN VLANs
+------------------------------------------------------------------------------
+
+
+Primary Secondary Type              Ports
+------- --------- ----------------- ------------------------------------------
+
+Interface              IP-Address      OK? Method Status                Protocol
+Vlan1                  192.168.0.5     YES NVRAM  up                    up      
+GigabitEthernet0/1     unassigned      YES unset  up                    up      
+GigabitEthernet0/2     unassigned      YES unset  down                  down    
+GigabitEthernet0/3     unassigned      YES unset  down                  down    
+GigabitEthernet0/4     unassigned      YES unset  down                  down    
+GigabitEthernet0/5     unassigned      YES unset  down                  down    
+GigabitEthernet0/6     unassigned      YES unset  down                  down    
+GigabitEthernet0/7     unassigned      YES unset  up                    up      
+GigabitEthernet0/8     unassigned      YES unset  down                  down    
+GigabitEthernet0/9     unassigned      YES unset  up                    up      
+GigabitEthernet0/10    unassigned      YES unset  down                  down    
+GigabitEthernet0/11    unassigned      YES unset  up                    up      
+GigabitEthernet0/12    unassigned      YES unset  down                  down    
+GigabitEthernet0/13    unassigned      YES unset  down                  down    
+GigabitEthernet0/14    unassigned      YES unset  up                    up      
+GigabitEthernet0/15    unassigned      YES unset  up                    up      
+GigabitEthernet0/16    unassigned      YES unset  down                  down    
+GigabitEthernet0/17    unassigned      YES unset  down                  down    
+GigabitEthernet0/18    unassigned      YES unset  down                  down    
+GigabitEthernet0/19    unassigned      YES unset  down                  down    
+GigabitEthernet0/20    unassigned      YES unset  down                  down    
+GigabitEthernet0/21    unassigned      YES unset  down                  down    
+GigabitEthernet0/22    unassigned      YES unset  down                  down    
+GigabitEthernet0/23    unassigned      YES unset  down                  down    
+GigabitEthernet0/24    unassigned      YES unset  down                  down    
+GigabitEthernet0/25    unassigned      YES unset  down                  down    
+GigabitEthernet0/26    unassigned      YES unset  down                  down    
+GigabitEthernet0/27    unassigned      YES unset  down                  down    
+GigabitEthernet0/28    unassigned      YES unset  down                  down    
+GigabitEthernet0/29    unassigned      YES unset  down                  down    
+GigabitEthernet0/30    unassigned      YES unset  down                  down    
+GigabitEthernet0/31    unassigned      YES unset  down                  down    
+GigabitEthernet0/32    unassigned      YES unset  down                  down    
+GigabitEthernet0/33    unassigned      YES unset  down                  down    
+GigabitEthernet0/34    unassigned      YES unset  down                  down    
+GigabitEthernet0/35    unassigned      YES unset  down                  down    
+GigabitEthernet0/36    unassigned      YES unset  down                  down    
+GigabitEthernet0/37    unassigned      YES unset  down                  down    
+GigabitEthernet0/38    unassigned      YES unset  up                    up      
+GigabitEthernet0/39    unassigned      YES unset  down                  down    
+GigabitEthernet0/40    unassigned      YES unset  down                  down    
+GigabitEthernet0/41    unassigned      YES unset  up                    up      
+GigabitEthernet0/42    unassigned      YES unset  down                  down    
+GigabitEthernet0/43    unassigned      YES unset  down                  down    
+GigabitEthernet0/44    unassigned      YES unset  down                  down    
+GigabitEthernet0/45    unassigned      YES unset  down                  down    
+GigabitEthernet0/46    unassigned      YES unset  up                    up      
+GigabitEthernet0/47    unassigned      YES unset  down                  down    
+GigabitEthernet0/48    unassigned      YES unset  down                  down    
+Interface                      Status         Protocol Description
+Vl1                            up             up       
+Gi0/1                          up             up       Trunk to TV Switch
+Gi0/2                          down           down     
+Gi0/3                          down           down     
+Gi0/4                          down           down     
+Gi0/5                          down           down     Server
+Gi0/6                          down           down     
+Gi0/7                          up             up       NAS
+Gi0/8                          down           down     
+Gi0/9                          up             up       Server
+Gi0/10                         down           down     
+Gi0/11                         up             up       Laptop Server
+Gi0/12                         down           down     
+Gi0/13                         down           down     AP
+Gi0/14                         up             up       
+Gi0/15                         up             up       POWERLINE
+Gi0/16                         down           down     
+Gi0/17                         down           down     
+Gi0/18                         down           down     
+Gi0/19                         down           down     
+Gi0/20                         down           down     
+Gi0/21                         down           down     
+Gi0/22                         down           down     
+Gi0/23                         down           down     
+Gi0/24                         down           down     
+Gi0/25                         down           down     
+Gi0/26                         down           down     
+Gi0/27                         down           down     
+Gi0/28                         down           down     
+Gi0/29                         down           down     
+Gi0/30                         down           down     
+Gi0/31                         down           down     
+Gi0/32                         down           down     
+Gi0/33                         down           down     
+Gi0/34                         down           down     
+Gi0/35                         down           down     
+Gi0/36                         down           down     
+Gi0/37                         down           down     
+Gi0/38                         up             up       
+Gi0/39                         down           down     
+Gi0/40                         down           down     
+Gi0/41                         up             up       Trunk To ER-X
+Gi0/42                         down           down     
+Gi0/43                         down           down     
+Gi0/44                         down           down     
+Gi0/45                         down           down     
+Gi0/46                         up             up       OUTHOUSE
+Gi0/47                         down           down     
+Gi0/48                         down           down     
