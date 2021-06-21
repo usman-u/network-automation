@@ -3,7 +3,7 @@ import getpass, datetime
 
 SW1 = {
     'device_type': 'cisco_ios',
-    'host':   '192.168.0.5',
+    'host':   '',
     'username': '',
     'password': '',
     'secret': '',
@@ -11,34 +11,50 @@ SW1 = {
 
 devices = [SW1] 
 
-for device in devices: 
-    time = datetime.datetime.now()
-    string_time = str(time)
+def backup(devices):
+    for device in devices: 
+        main_time = datetime.datetime.now()
+        string_time = str(main_time.strftime("%x"))
+        if device["username"] == "":
+            (device["username"]) = getpass.getpass(prompt="No Host Data; Enter SSH Username: " )
+        if device["password"] == "":
+            (device["password"]) = getpass.getpass(prompt="No Host Data Enter SSH Password: ")
+        if device["secret"] == "":
+            (device["secret"]) = getpass.getpass(prompt="No Host Data Enter Secret for: ")
 
-    (device["username"]) = getpass.getpass(prompt='Enter SSH Username: ')
-    (device["password"]) = getpass.getpass(prompt="Enter SSH Password: ")
-    (device["secret"]) = getpass.getpass(prompt="Enter Secret Password: ")
+        net_connect = ConnectHandler(**device) # connects to current device iteration
+        print ("Connected to: "+device["host"])
+        net_connect.enable()  # runs the enable command 
+        
+        show_run = net_connect.send_command("show run")
+        show_vlan = net_connect.send_command("show vlan") 
+        sh_ints = net_connect.send_command("show ip int br") 
+        sh_version = net_connect.send_command("show version", use_textfsm=True)
+        sh_ints_desc = net_connect.send_command("show interfaces description")
 
-    net_connect = ConnectHandler(**device) # connects to every device 
-    net_connect.enable()  # runs the enable command 
+        hostname = sh_version[0]['hostname']  # gets data from initial dict
+        IPaddr = device['host']
 
-    show_run = net_connect.send_command("show run")
-    show_vlan = net_connect.send_command("show vlan") 
-    sh_ints = net_connect.send_command("show ip int br") 
-    sh_version = net_connect.send_command("show version", use_textfsm=True)
-    sh_ints_desc = net_connect.send_command("show interfaces description")
+        print("Backing up " + hostname + string_time) 
 
-    hostname = sh_version[0]['hostname']  # gets data from initial dict
-    IPaddr = device['host']
+        fileName = (hostname + "-" + IPaddr + "-" + "Backup")# generates filename from initial dict
+        #fileName = (hostname)# generates filename from initial dict
 
-    print("Backing up " + hostname + string_time) 
+        contents = (show_run +"\n"+ show_vlan +"\n"+ sh_ints +"\n"+ sh_ints_desc) 
 
-    fileName = (hostname + "-" + IPaddr + "-" + "Backup" + " at " + string_time)      # generates filename from initial dict
-    contents = (show_run +"\n"+ show_vlan +"\n"+ sh_ints +"\n"+ sh_ints_desc) 
+        f = open(fileName, "x") # opens in (w)rite mode, to overwrite existing contents, instead of (a)ppend 
+        f.write(contents)
 
-    f = open((fileName), "w") # opens in (w)rite mode, to overwrite existing contents, instead of (a)ppend 
-    f.write(contents)
+        print ("Wrote File: " + fileName)
+        f.close()
+        net_connect.disconnect()
 
-    print ("Wrote File: " + fileName)
-    f.close()
-    net_connect.disconnect()
+def MainMenu():
+    selection = input("Choose an option:\n 1: Backup Config: ") 
+    while selection != "1":
+        selection = input("Invalid Input!\n Choose an option:\n 1: Backup Config\n") 
+    
+    if selection == "1":
+        backup(devices)
+
+MainMenu()
