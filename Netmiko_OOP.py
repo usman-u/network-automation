@@ -1,6 +1,4 @@
-from os import device_encoding
 from netmiko import Netmiko, ConnectHandler
-import netmiko
 
 class Main():
 
@@ -28,7 +26,7 @@ class Main():
         # connects to the device via ssh
         print("Connecting to", self.host, "via SSH")
         self.SSHConnection = ConnectHandler(**self.data)
-        print("Connected")
+        print("Connected to", self.host, "via SSH")
 
     def printData(self):
         return self.data
@@ -36,8 +34,14 @@ class Main():
     def getconfig(self):
 
         config = self.SSHConnection.send_command(f'show configuration')
+        return config
         self.write_file(config)
         
+    def getconfig_command(self):
+
+        config = self.SSHConnection.send_command(f'show configuration commands')
+        return config
+
     def write_file(self, contents):
 
         fileName = (self.device_type + self.host)
@@ -73,13 +77,3 @@ class Main():
         print ("Running traceroute to", target)
         traceroute = self.SSHConnection.send_command("traceroute 1.1.1.1")
         return traceroute
-
-# creates an instance of the MAIN class with arguments, and connects via SSH
-erx1 = Main("", "", "", "", True, r"C:\Users\Usman\.ssh\id_rsa", "")
-
-ciscosw1 = Main("", "", "", "", False, r"C:\Users\Usman\.ssh\id_rsa", "")
-
-devices = [erx1]
-
-for i in devices:
-    print (Main.version(i))
