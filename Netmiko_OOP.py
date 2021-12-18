@@ -2,6 +2,7 @@ from netmiko import Netmiko, ConnectHandler
 
 class Main():
 
+    # attributes are standard for netmiko functionality
     def __init__(self, device_type, host, username, password, use_keys, key_file, secret):
         self.device_type = device_type
         self.host = host
@@ -11,36 +12,43 @@ class Main():
         self.key_file = key_file
         self.secret = secret
 
-        # netmiko template for device    
-        self.data = {
+        # netmiko template for network device parameters
+        # uses first if statement if the user has a ssh private key file
+        # second if using username password auth
 
-            'device_type': self.device_type,
-            'host':   self.host,
-            'username': self.username,
-            'password': self.password,
-            'use_keys': self.use_keys,
-            'key_file': self.key_file,
+        if self.use_keys == True:
 
-        }
+            self.data = {
+
+                'device_type': self.device_type,
+                'host':   self.host,
+                'username': self.username,
+                'password': self.password,
+                'use_keys': self.use_keys,
+                'key_file': self.key_file,
+
+            }
+        
+        elif self.use_keys == False:
+
+            self.data = {
+
+                'device_type': self.device_type,
+                'host':   self.host,
+                'username': self.username,
+                'password': self.password,
+
+            }
 
         # connects to the device via ssh
         print("Connecting to", self.host, "via SSH")
         self.SSHConnection = ConnectHandler(**self.data)
         print("Connected to", self.host, "via SSH")
 
+    # vendor neutral methods - common commands are syntaxically identical on various network systems
+
     def printData(self):
         return self.data
-
-    def getconfig(self):
-
-        config = self.SSHConnection.send_command(f'show configuration')
-        return config
-        self.write_file(config)
-        
-    def getconfig_command(self):
-
-        config = self.SSHConnection.send_command(f'show configuration commands')
-        return config
 
     def write_file(self, contents):
 
@@ -51,29 +59,78 @@ class Main():
 
         print ("Wrote File", fileName)
         file.close()
-    
-    def bgp_neighbors(self, neighbor):
 
-        neighbors = self.SSHConnection.send_command("show ip bgp neighbors")
-        return neighbors
-
-    def route_table(self):
-
-        routes = self.SSHConnection.send_command("show ip route")
-        return (routes)
-
-    def version(self):
+    def get_version(self):
         
-        version = self.SSHConnection.send_command("show version")
-        return version
+        result = self.SSHConnection.send_command("show version")
+        return result
 
-    def ping(self, target):
+    def run_ping(self, target):
 
-        ping = self.SSHConnection.send_command(f"ping {target} -t 5")
-        return ping
+        result = self.SSHConnection.send_command(f"ping {target} -t 5")
+        return result
 
-    def traceroute(self, target):
+    def run_traceroute(self, target):
         
         print ("Running traceroute to", target)
-        traceroute = self.SSHConnection.send_command("traceroute 1.1.1.1")
-        return traceroute
+        result = self.SSHConnection.send_command("traceroute 1.1.1.1")
+        return result
+
+class EdgeRouter(Main):  # Vyos/EdgeOS specific commands
+
+    # inherits all methods and attributes from the MAIN class
+    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
+        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
+        # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
+    
+    def get_config(self):
+
+        result = self.SSHConnection.send_command(f'show configuration')
+        return result
+        
+    def get_config_commands(self):
+
+        result = self.SSHConnection.send_command(f'show configuration commands')
+        return result
+    
+    def get_bgp_neighbors(self, neighbor):
+
+        result = self.SSHConnection.send_command("show ip bgp neighbors")
+        return result
+
+    def get_route_table(self):
+
+        result = self.SSHConnection.send_command("show ip route", use_textfsm=True)
+        return result
+
+    def get_interfaces(self):
+
+        result = self.SSHConnection.send_command("show interfaces", use_textfsm=True)
+        return result
+
+class Cisco_IOS(Main):  # cisco specific commands
+
+    # inherits all methods and attributes from MAIN class
+    def __init__(self, device_type, host, username, password , use_keys, secret):
+        super().__init__(device_type, host, username, password, use_keys, secret)
+        # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
+    
+    def get_config(self):
+
+        result = self.SSHConnection.send_command(f'show run')
+        return result
+    
+    def get_route_table(self):
+
+        result = self.SSHConnection.send_command("show ip route")
+        return result
+    
+    def get_interfaces_brief(self):
+
+        result = self.SSHConnection.send_command("show ip interface brief")
+        return result
+
+    def get_interfaces(self):
+
+        result = self.SSHConnection.send_command("show ip interface")
+        return result
