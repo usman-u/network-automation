@@ -21,8 +21,22 @@ OOP:
             > CiscoRouter
             > Cisco Catalyst Switches
                 
-Functions:
-    ARP lookup cicso sw lookup
+Methods TODO:
+    Cisco:
+        Interfaces:
+            Desc
+            Ip addr
+            Switched/Routed mode
+        VLANs:
+            Enable vlans (up)
+            switchport mode access/trunk
+            switchport trunk allowed vlan
+    Vyos:
+        Interfaces:
+            Desc
+            Ip addr
+            Enable Interfaces (& vlans)
+        Show protocols
 
 GUI:
     flask v. django
@@ -31,21 +45,28 @@ GUI:
         ssh key upload
         username password imput
         bulk input via 
-    
+
     dashboard:
-        via SNMP metrics
+        via SNMP metrics (https://buildmedia.readthedocs.org/media/pdf/easysnmp/stable/easysnmp.pdf)
         uptime 
+        geolocation on map
         diagram generator
         bulk device input (json)
-        
+        SMTP email alerts - link to gmail
+
+        interface throughput levels graph
+
 sqlite3 DB:
     table for user logins + time
     table for commands sent
     device credentials
 
+syslog:
+    python server
+    sql db
+
 misc:
     regex for results (if textfsm fails)
-    SMTP email alerts - link to gmail
 
 sipcalc:
     ipv4 & ipv6

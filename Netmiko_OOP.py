@@ -1,4 +1,5 @@
 from netmiko import Netmiko, ConnectHandler
+import datetime
 
 class Main():
 
@@ -6,38 +7,33 @@ class Main():
     def __init__(self, device_type, host, username, password, use_keys, key_file, secret):
         self.device_type = device_type
         self.host = host
-        self.username = username
-        self.password = password
+        self.username = self.validate_is_string(username)
+        self.__password = password
         self.use_keys = use_keys
         self.key_file = key_file
-        self.secret = secret
+        self.secret = self.validate_is_string(secret)
 
         # netmiko template for network device parameters
         # uses first if statement if the user has a ssh private key file
         # second if using username password auth
 
         if self.use_keys == True:
-
             self.data = {
-
                 'device_type': self.device_type,
                 'host':   self.host,
                 'username': self.username,
-                'password': self.password,
-                'use_keys': self.use_keys,
+                'password': self.__password,
                 'key_file': self.key_file,
-
+                'secret': self.secret,
             }
         
         elif self.use_keys == False:
-
             self.data = {
-
                 'device_type': self.device_type,
                 'host':   self.host,
                 'username': self.username,
-                'password': self.password,
-
+                'password': self.__password,
+                'secret': self.secret,
             }
 
         # connects to the device via ssh
@@ -45,14 +41,26 @@ class Main():
         self.SSHConnection = ConnectHandler(**self.data)
         print("Connected to", self.host, "via SSH")
 
-    # vendor neutral methods - common commands are syntaxically identical on various network systems
 
-    def printData(self):
+    def validate_is_string(self, inp):
+        if type(inp) != str:
+            raise ValueError ("Input is Not String. Check device parameters")
+        return inp  # returns inp if the input is valid (string)
+
+    def validate_use_keys(self, inp):
+        if type(inp) != bool:
+            raise ValueError ("Enter Boolean Value: True or False for use_keys")
+        return inp  # returns inp if the input is valid (boolean)
+
+    # vendor neutral methods - common commands that are syntaxically identical on various network systems
+
+    def get_data(self):
         return self.data
 
     def write_file(self, contents):
 
-        fileName = (self.device_type + self.host)
+        # gets the device type, hostname from self class, and time from get time method 
+        fileName = (self.device_type +" " + self.host + " " + (self.get_current_time()))
 
         file = open((fileName), "w") 
         file.write(contents)
@@ -60,77 +68,94 @@ class Main():
         print ("Wrote File", fileName)
         file.close()
 
+    def get_current_time(self):
+        x = datetime.datetime.now()
+        return (x.strftime("%H%M %d-%m-%y"))
+
+
     def get_version(self):
-        
-        result = self.SSHConnection.send_command("show version")
-        return result
+        return (self.SSHConnection.send_command("show version"))
 
     def run_ping(self, target):
-
-        result = self.SSHConnection.send_command(f"ping {target} -t 5")
-        return result
+        return (self.SSHConnection.send_command(f"ping {target}"))
 
     def run_traceroute(self, target):
-        
         print ("Running traceroute to", target)
-        result = self.SSHConnection.send_command("traceroute 1.1.1.1")
-        return result
+        return (self.SSHConnection.send_command("traceroute 1.1.1.1"))
 
-class EdgeRouter(Main):  # Vyos/EdgeOS specific commands
+class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
     def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
         super().__init__(device_type, host, username, password, use_keys, key_file, secret)
-        # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
+        # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def get_config(self):
-
-        result = self.SSHConnection.send_command(f'show configuration')
-        return result
+        return (self.SSHConnection.send_command(f'show configuration'))
         
     def get_config_commands(self):
-
-        result = self.SSHConnection.send_command(f'show configuration commands')
-        return result
+        return (self.SSHConnection.send_command(f'show configuration commands'))
     
     def get_bgp_neighbors(self, neighbor):
-
-        result = self.SSHConnection.send_command("show ip bgp neighbors")
-        return result
+        return (self.SSHConnection.send_command("show ip bgp neighbors"))
 
     def get_route_table(self):
-
-        result = self.SSHConnection.send_command("show ip route", use_textfsm=True)
-        return result
+        return (self.SSHConnection.send_command("show ip route", use_textfsm=True))
 
     def get_interfaces(self):
+        return (self.SSHConnection.send_command("show interfaces"))
+    
+    def run_disable_interface(self, interface_type, interface_name):
+        self.SSHConnection.config_mode()
+        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} disable")
+        self.SSHConnection.commit()
+        print ("Remember to manually Save")
 
-        result = self.SSHConnection.send_command("show interfaces", use_textfsm=True)
-        return result
+    # enable interface (delete disable)
+    def delete_disable_interface(self, interface_type, interface_name):
+        self.SSHConnection.config_mode()
+        self.SSHConnection.send_command(f"delete interfaces {interface_type} {interface_name} disable")
+        self.SSHConnection.commit()
+        print ("Remember to manually Save")
+
+    def set_interfaces_desc(self, interface_type, interface_name, desc):
+        self.SSHConnection.config_mode()
+        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} description {desc} ")
+        self.SSHConnection.commit()
+        print ("Remember to manually Save")
 
 class Cisco_IOS(Main):  # cisco specific commands
 
     # inherits all methods and attributes from MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, secret):
-        super().__init__(device_type, host, username, password, use_keys, secret)
+    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
+        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
     
-    def get_config(self):
+    def get_all_config(self):
 
-        result = self.SSHConnection.send_command(f'show run')
+        self.SSHConnection.enable()
+        result = (self.SSHConnection.send_command('show run', use_textfsm=True)) 
+        self.SSHConnection.exit_enable_mode()
+        return result
+
+    def get_config_include(self, term):
+        self.SSHConnection.enable()   # enable cisco enable mode, with self.secret, in superclass 
+        result = self.SSHConnection.send_command(f'show run | include {term}', use_textfsm=True)
+        self.SSHConnection.exit_enable_mode()
         return result
     
     def get_route_table(self):
-
-        result = self.SSHConnection.send_command("show ip route")
-        return result
+        return (self.SSHConnection.send_command("show ip route"))
     
     def get_interfaces_brief(self):
-
-        result = self.SSHConnection.send_command("show ip interface brief")
-        return result
+        return (self.SSHConnection.send_command("show ip interface brief", use_textfsm=True))
 
     def get_interfaces(self):
+        return (self.SSHConnection.send_command("show ip interface", use_textfsm=True))
+    
+    def get_arp(self):
+        return (self.SSHConnection.send_command("show arp", use_textfsm=True))
 
-        result = self.SSHConnection.send_command("show ip interface")
-        return result
+    def run_set_interface_desc(self, new_desc):
+        pass
+        # TODO
