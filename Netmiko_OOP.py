@@ -57,10 +57,9 @@ class Main():
     def get_data(self):
         return self.data
 
-    def write_file(self, contents):
-
+    def write_file(self, contents, fileName):
         # gets the device type, hostname from self class, and time from get time method 
-        fileName = (self.device_type +" " + self.host + " " + (self.get_current_time()))
+        fileName += (" " + self.device_type +" " + self.host + " " + (self.get_current_time())+ ".txt")
 
         file = open((fileName), "w") 
         file.write(contents)
@@ -105,7 +104,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
     
-    def run_disable_interface(self, interface_type, interface_name):
+    def disable_interface(self, interface_type, interface_name):
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} disable")
         self.SSHConnection.commit()

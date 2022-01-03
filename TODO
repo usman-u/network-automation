@@ -37,6 +37,9 @@ Methods TODO:
             Ip addr
             Enable Interfaces (& vlans)
         Show protocols
+Backups:
+    Push to git repo
+    scp to remote server
 
 GUI:
     flask v. django
