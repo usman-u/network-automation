@@ -81,12 +81,15 @@ class Main():
     def run_traceroute(self, target):
         print ("Running traceroute to", target)
         return (self.SSHConnection.send_command("traceroute 1.1.1.1"))
+    
+    def get_bgp_route(self, target):
+        return (self.SSHConnection.send_command(f"show ip bgp {target}"))
 
 class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
-        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
+    def __init__(self, host, username, password , use_keys, key_file, secret):
+        super().__init__("vyos", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def get_config(self):
@@ -126,10 +129,22 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 class Cisco_IOS(Main):  # cisco specific commands
 
     # inherits all methods and attributes from MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
-        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
+    # sends 'cisco_ios' as an argument, so user doesn't have to specify device_type
+    def __init__(self, host, username, password , use_keys, key_file, secret):
+        super().__init__("cisco_ios", host, username, password, use_keys, key_file, secret)
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
     
+    # polymorphism - adds .ios
+    def write_file(self, contents, fileName):
+        # gets the device type, hostname from self class, and time from get time method 
+        fileName += (" " + self.device_type +" " + self.host + " " + (self.get_current_time())+ ".ios")
+
+        file = open((fileName), "w") 
+        file.write(contents)
+
+        print ("Wrote File", fileName)
+        file.close()
+
     def get_all_config(self):
 
         self.SSHConnection.enable()
@@ -158,3 +173,25 @@ class Cisco_IOS(Main):  # cisco specific commands
     def run_set_interface_desc(self, new_desc):
         pass
         # TODO
+
+
+class BIRD(Main):  # cisco specific commands
+
+    # inherits all methods and attributes from MAIN class
+    # sends 'linux' as an argument, so user doesn't have to specify device_type
+    def __init__(self, host, username, password , use_keys, key_file, secret):
+        super().__init__("linux", host, username, password, use_keys, key_file, secret)
+        # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
+    
+    def get_bgp_route(self, target):
+        return (self.SSHConnection.send_command(f"sudo su; birdc show ip bgp {target}"))
+
+    # TODO fix BIRD multi-line command (login as root for birdc)
+    def get_birdc_protocols(self):
+        return (self.SSHConnection.send_command(f"""
+        sudo su
+        birdc show protocols
+    """))
+
+    def run_traceroute(self, target):
+        return (self.SSHConnection.send_command(f"traceroute {target}"))
