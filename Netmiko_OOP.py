@@ -13,7 +13,7 @@ class Main():
         self.key_file = key_file
         self.secret = self.validate_is_string(secret)
 
-        # netmiko template for network device parameters
+        # netmiko DICTIONARY for network device parameters
         # uses first if statement if the user has a ssh private key file
         # second if using username password auth
 
