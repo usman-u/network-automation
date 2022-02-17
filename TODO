@@ -21,7 +21,7 @@ OOP:
             > CiscoRouter
             > Cisco Catalyst Switches
                 
-Methods TODO:
+Methods TODO: # verify if interfaces, vlans, etc exist
     Cisco:
         Interfaces:
             Desc
@@ -33,8 +33,8 @@ Methods TODO:
             switchport trunk allowed vlan
     Vyos:
         Interfaces:
-            Desc
-            Ip addr
+            Description
+            Ip address
             Enable Interfaces (& vlans)
         Show protocols
 Backups:

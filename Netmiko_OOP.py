@@ -82,6 +82,9 @@ class Main():
         print ("Running traceroute to", target)
         return (self.SSHConnection.send_command("traceroute 1.1.1.1"))
     
+    def get_route(self, target):
+        return (self.SSHConnection.send_command(f"show ip route {target}"))
+
     def get_bgp_route(self, target):
         return (self.SSHConnection.send_command(f"show ip bgp {target}"))
 
