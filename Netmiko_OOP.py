@@ -70,7 +70,9 @@ class Main():
     def get_current_time(self):
         x = datetime.datetime.now()
         return (x.strftime("%H%M %d-%m-%y"))
-
+    
+    def custom_command(self, command):
+        return (self.SSHConnection.send_command(f"{command}"))
 
     def get_version(self):
         return (self.SSHConnection.send_command("show version"))
@@ -88,6 +90,9 @@ class Main():
     def get_bgp_route(self, target):
         return (self.SSHConnection.send_command(f"show ip bgp {target}"))
 
+    def get_route_table(self):
+        return (self.SSHConnection.send_command("show ip route"))
+
 class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
@@ -104,8 +109,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_bgp_neighbors(self, neighbor):
         return (self.SSHConnection.send_command("show ip bgp neighbors"))
 
-    def get_route_table(self):
-        return (self.SSHConnection.send_command("show ip route", use_textfsm=True))
+    def get_route_table(self, modifier):
+        return (self.SSHConnection.send_command(f"show ip route {modifier}", use_textfsm=True))
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
@@ -166,6 +171,9 @@ class Cisco_IOS(Main):  # cisco specific commands
     
     def get_interfaces_brief(self):
         return (self.SSHConnection.send_command("show ip interface brief", use_textfsm=True))
+
+    def get_route_table(self, modifier):
+        return (self.SSHConnection.send_command(f"show ip route {modifier}", use_textfsm=True))
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show ip interface", use_textfsm=True))
