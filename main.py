@@ -1,24 +1,60 @@
-from Netmiko_OOP import *
+from Netmiko_OOP import *        # imports all classes & methods from Netmiko.py
+
+###
+example_device = Cisco_IOS(
+    "hostname",
+    "username",
+    "password", 
+    False,                          # connect using SSH keys 
+    r"C:\Users\Usman\.ssh\id_rsa",  # SSH private key location
+    "")                             # cisco ios secret
+###
+
+# creates an instance of the Main class with arguments, which connects to the device (via SSH)
+# and stores the instance in a variable
+usmancisco = Cisco_IOS(
+    "usman-cisco.lan",
+    "usman",
+    "", 
+    False, 
+    "", 
+    "")
+
+zahidcore = Cisco_IOS(
+    "zahid-core.lan",
+    "usman",
+    "", 
+    False, 
+    "", 
+    "")
+
+usmanerx = Main(
+    "ubiquiti_edgerouter", 
+    "usman-erx.lan", 
+    "usman", 
+    "", 
+    True, 
+    r"C:\Users\Usman\.ssh\id_rsa", 
+    "")
+
+zahiderx = Main(
+    "ubiquiti_edgerouter", 
+    "zahid-erx.lan", 
+    "usman", 
+    "", 
+    True, 
+    r"C:\Users\Usman\.ssh\id_rsa", 
+    "")
 
 
-# creates an instance of the MAIN class with arguments, and connects via SSH
-# erx1 = Main("ubiquiti_edgerouter", "erx.lan", "usman", "t", False , r"C:\Users\Usman\.ssh\id_rsa", "")
+ciscodevices = [zahidcore, usmancisco]
 
+for device in ciscodevices:                                                                 # iterates through the "cisco_devices" array and:
+    to_write = Cisco_IOS.get_all_config(device) + "\n\n\n" + Cisco_IOS.get_version(device)  # stores the outputs from method in a "to_write"
+    Cisco_IOS.write_file(device, to_write, "")                                              # writes the output to new files
 
-# devices = [erx1]
+ubiqutirouters = [zahiderx, usmanerx]
 
-# for i in devices:
-#     Main.write_file(i, Main.version(i))
-#     # print(Main.version(i))
-
-
-erx1 = EdgeRouter("ubiquiti_edgerouter", "erx.lan", "usman", "", False , r"C:\Users\Usman\.ssh\id_rsa", "")
-erx1.get_interfaces()
-
-# print (erx1.write_file (str((erx1.printData()))))
-
-# ciscosw1 = Cisco_IOS("cisco_ios", "cisco2960.lan", "admin", "", False, r"C:\Users\Usman\.ssh\id_rsa", "")
-
-
-# ciscosw1 = Cisco_IOS("cisco_ios", "10.0.10.66", "usman", "", False, r"id_rsa", "")
-# print (ciscosw1.show_ip_int_br())
+for device in ubiqutirouters:
+    to_write = Vyos.get_config(device) + "\n\n\n" + Vyos.get_config_commands(device)
+    Main.write_file(device, to_write, "")
