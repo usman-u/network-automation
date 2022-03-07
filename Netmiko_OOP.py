@@ -119,20 +119,46 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} disable")
         self.SSHConnection.commit()
-        print ("Remember to manually Save")
 
     # enable interface (delete disable)
     def delete_disable_interface(self, interface_type, interface_name):
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"delete interfaces {interface_type} {interface_name} disable")
-        self.SSHConnection.commit()
-        print ("Remember to manually Save")
 
     def set_interfaces_desc(self, interface_type, interface_name, desc):
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} description {desc} ")
+
+    def set_interfaces_addr(self, interface_type, interface_name, addr):
+        self.SSHConnection.config_mode()
+        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} address {addr} ")
+    
+    def set_hostname(self, hostname):
+        self.SSHConnection.config_mode()
+        self.SSHConnection.send_command(f"set system host-name {hostname}")
+    
+    def compare(self):
+        return self.SSHConnection.send_command("compare")
+
+    def save_config(self):
+        commands = ["save"]
+        self.SSHConnection.send_config_set(commands)
+
+    def OSPF_add_network(self, area, subnet):
+        self.SSHConnection.send_command(f"set protocols ospf area {area} network {subnet}")
+    
+    def BGP_peer(self, localAS, remoteAS, neighborIP):
+        self.SSHConnection.send_command(f"set protocols bgp {localAS} neighbor {neighborIP} remote-as {remoteAS}")
+    
+    def BGP_adv_prefix(self, localAS, addressFamily, prefix):
+        self.SSHConnection.send_command(f"set protocols bgp {localAS} address-family {addressFamily} network {prefix}")
+        
+    def redistr(self, into, redis):
+        self.SSHConnection.send_command(f"set protocols {into} redistribute {redis}")
+
+    def commit(self):
         self.SSHConnection.commit()
-        print ("Remember to manually Save")
+        print ("committed")
 
 class Cisco_IOS(Main):  # cisco specific commands
 
