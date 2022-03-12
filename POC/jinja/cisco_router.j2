@@ -1,0 +1,25 @@
+{{ device }}
+
+{% for int in interfaces -%}
+interface {{ int.name }}
+ ip address {{ int.ip }} {{ int.mask }}
+ {% if int.state == "enabled" -%}
+ no shutdown
+ {% else -%}
+ shutdown
+ {% endif -%}
+!
+{% endfor -%}
+router bgp {{ bgpasn }}
+{% for neighbor in bgp_neighbors -%}
+ neighbor {{ neighbor.ip }} remote-as {{ neighbor.remote_as }}
+{% endfor -%}
+!
+router ospf {{ ospf_pid }}
+{% if use_ospf_routerid == "yes" -%}
+  router-id {{ ospf_routerid }}
+{% endif -%}
+{% for net in ospf_networks -%}
+  network {{ net.subnet }} {{net.mask }} area {{ net.area }}
+{% endfor -%}
+!
