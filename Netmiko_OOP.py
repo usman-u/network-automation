@@ -1,3 +1,4 @@
+from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
 import datetime
 
@@ -12,6 +13,7 @@ class Main():
         self.use_keys = use_keys
         self.key_file = key_file
         self.secret = self.validate_is_string(secret)
+        self.Template = Template
 
         # netmiko DICTIONARY for network device parameters
         # uses first if statement if the user has a ssh private key file
@@ -210,6 +212,38 @@ class Cisco_IOS(Main):  # cisco specific commands
     def run_set_interface_desc(self, new_desc):
         pass
         # TODO
+    
+
+    def gen_vlan(id, desc, ip, mask):
+        jing = """vlan {{ vlan }}
+  name {{ desc }}
+int vlan {{ vlan }}
+  ip address {{ ip }} {{ mask }}
+  no shutdown
+!"""
+        vlanTemplate = Template(jing)
+        return (vlanTemplate.render(vlan=id, vlandesc=desc, ip=ip, mask=mask))
+    
+
+    def gen_ints(confs):
+        for i in confs:
+            jing = """{% for int in interfaces -%}
+    interface {{ name }}
+    ip address {{ ip }} {{ mask }}
+    {% if state == "enabled" -%}
+    no shutdown
+    {% else -%}
+    shutdown
+    {% endif -%}
+    {% endfor -%}
+    !"""
+            vlanTemplate = Template(jing)
+            print (vlanTemplate)
+            return (vlanTemplate.render(
+                        name=i[0], state=i[1], ip=i[2], mask=i[3]
+                        )
+                    )
+    
 
 
 class BIRD(Main):  # cisco specific commands
