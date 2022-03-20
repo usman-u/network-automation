@@ -14,12 +14,12 @@ OOP:
     Vendor Superclass Hierarchy - polymorphism?:
 
         EdgeOS:
-            > EdgeRouter
-            > EdgeSwitch
+            EdgeRouter
+            EdgeSwitch
 
         Cisco:                      
-            > CiscoRouter
-            > Cisco Catalyst Switches
+            CiscoRouter
+            Cisco Catalyst Switches
                 
 Methods TODO: # verify if interfaces, vlans, etc exist
     Cisco:
@@ -37,27 +37,22 @@ Methods TODO: # verify if interfaces, vlans, etc exist
             Ip address
             Enable Interfaces (& vlans)
         Show protocols
-Backups:
-    Push to git repo
-    scp to remote server
-
 GUI:
     flask v. django
     user authentication & privilege levels
-    netmiko device intake details
+
+    netmiko device intake details >> store in DB
         ssh key upload
         username password imput
-        bulk input via 
 
     dashboard:
         via SNMP metrics (https://buildmedia.readthedocs.org/media/pdf/easysnmp/stable/easysnmp.pdf)
         uptime 
         geolocation on map
         diagram generator
-        bulk device input (json)
-        SMTP email alerts - link to gmail
-
-        interface throughput levels graph
+        SMTP email alerts - link to gmail, discord webhook
+        interface throughput levels graph      >> DB
+        compare route tables at time intervals >> DB
 
 sqlite3 DB:
     table for user logins + time
@@ -68,8 +63,13 @@ syslog:
     python server
     sql db
 
+Backups:
+    Push to git repo
+    scp to remote server
+
+
 misc:
     regex for results (if textfsm fails)
 
-sipcalc:
-    ipv4 & ipv6
+multithreading:
+    nornir

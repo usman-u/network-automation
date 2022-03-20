@@ -9,7 +9,7 @@ class Main():
         self.host = host
         self.username = self.validate_is_string(username)
         self.__password = password
-        self.use_keys = use_keys
+        self.use_keys = self.validate_use_keys(use_keys)
         self.key_file = key_file
         self.secret = self.validate_is_string(secret)
 
@@ -51,6 +51,11 @@ class Main():
         if type(inp) != bool:
             raise ValueError ("Enter Boolean Value: True or False for use_keys")
         return inp  # returns inp if the input is valid (boolean)
+    
+    def validate_device_type(self, inp):
+        if inp != "cisco_ios" or inp != "ubiquiti_edgerouter" or inp != "vyos":
+            raise ValueError ("This framework only supports cisco_ios, vyos, and ubiquti_edgerouter. \n Likely error in device_type.")
+        return inp # returns inp if the input is valid (3 specified strings)
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
 
@@ -90,8 +95,8 @@ class Main():
     def get_bgp_route(self, target):
         return (self.SSHConnection.send_command(f"show ip bgp {target}"))
 
-    def get_route_table(self):
-        return (self.SSHConnection.send_command("show ip route"))
+    def get_route_table(self, modifier):
+        return (self.SSHConnection.send_command(f"show ip route {modifier}"))
 
 class Vyos(Main):  # Vyos/EdgeOS specific commands
 
@@ -106,11 +111,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_config_commands(self):
         return (self.SSHConnection.send_command(f'show configuration commands'))
     
-    def get_bgp_neighbors(self, neighbor):
-        return (self.SSHConnection.send_command("show ip bgp neighbors"))
-
-    def get_route_table(self, modifier):
-        return (self.SSHConnection.send_command(f"show ip route {modifier}", use_textfsm=True))
+    def get_bgp_neighbors(self):
+        return (self.SSHConnection.send_command("show ip bgp summary"))
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
@@ -159,6 +161,13 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def commit(self):
         self.SSHConnection.commit()
         print ("committed")
+
+class EdgeOS(Main):  # Vyos/EdgeOS specific commands
+
+    # inherits all methods and attributes from the MAIN class
+    def __init__(self, host, username, password , use_keys, key_file, secret):
+        super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file, secret)
+        # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
 
 class Cisco_IOS(Main):  # cisco specific commands
 
