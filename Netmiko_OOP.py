@@ -13,7 +13,6 @@ class Main():
         self.use_keys = self.validate_use_keys(use_keys)
         self.key_file = key_file
         self.secret = self.validate_is_string(secret)
-        self.Template = Template
 
         # netmiko DICTIONARY for network device parameters
         # uses first if statement if the user has a ssh private key file
@@ -148,18 +147,6 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         commands = ["save"]
         self.SSHConnection.send_config_set(commands)
 
-    def OSPF_add_network(self, area, subnet):
-        self.SSHConnection.send_command(f"set protocols ospf area {area} network {subnet}")
-    
-    def BGP_peer(self, localAS, remoteAS, neighborIP):
-        self.SSHConnection.send_command(f"set protocols bgp {localAS} neighbor {neighborIP} remote-as {remoteAS}")
-    
-    def BGP_adv_prefix(self, localAS, addressFamily, prefix):
-        self.SSHConnection.send_command(f"set protocols bgp {localAS} address-family {addressFamily} network {prefix}")
-        
-    def redistr(self, into, redis):
-        self.SSHConnection.send_command(f"set protocols {into} redistribute {redis}")
-
     def commit(self):
         self.SSHConnection.commit()
         print ("committed")
@@ -221,38 +208,66 @@ class Cisco_IOS(Main):  # cisco specific commands
     def run_set_interface_desc(self, new_desc):
         pass
         # TODO
-    
 
-    def gen_vlan(id, desc, ip, mask):
-        jing = """vlan {{ vlan }}
+class GenVyos():
+    def gen_int(type, name, ip, mask, state):
+        template = """{% if state == "enabled" -%}
+set interfaces {{ type }} {{ name }} {{ ip }} {{ mask }}
+{% else -%}
+set interfaces {{ type }} {{ name }} {{ ip }} {{ mask }} disabled {% endif -%}"""
+        output = Template(template)
+        return (output.render(type=type, name=name, ip=ip, mask=mask, state=state))
+
+    def gen_ospf_network(area, subnet, state):
+        template = """{% if state == "absent" -%}
+        delete protocols ospf area {{ area }} network {{ network }}
+        {% else -%}
+        set protocols ospf area {{ area }} network {{ network }} {% endif -%}"""
+        output = Template(template)
+        return (output.render(area=area, network=subnet, state=state))
+
+    def gen_bgp_peer(localAS, remoteAS, neighborIP, state):
+        template = """{% if state == "absent" -%}
+        delete protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }}{% else -%}
+        set protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }}{% endif -%}"""
+        output = Template(template)
+        return (output.render(localAS=localAS, neighborIP=neighborIP, remoteAS=remoteAS, state=state))
+    
+    def gen_bgp_prefix(localAS, addressFamily, prefix, state):
+        template = """{% if state == "absent" -%}
+        delete protocols bgp {{ localAS }} address-family {{ addressFamily }} network {{ prefix }}
+        {% else -%}
+        set protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }} {% endif -%}"""
+        output = Template(template)
+        return (output.render(localAS=localAS, addressFamily=addressFamily, prefix=prefix, state=state))
+
+class GenCisco():        # class for generating configurations using Jinja2
+    def gen_vlan(id, desc, ip, mask, state):
+        vlan_template = """vlan {{ vlan }}
   name {{ desc }}
 int vlan {{ vlan }}
   ip address {{ ip }} {{ mask }}
+{% if state == "enabled" -%}
   no shutdown
+{% else -%}
+  shutdown
+{% endif -%}
 !"""
-        vlanTemplate = Template(jing)
-        return (vlanTemplate.render(vlan=id, vlandesc=desc, ip=ip, mask=mask))
-    
+        output = Template(vlan_template)
+        return (output.render(vlan=id, vlandesc=desc, ip=ip, mask=mask, state=state)) # left of = is the variables name in the j2 vlan_template, 
+                                                                              # right of = is method parameter
 
-    def gen_ints(confs):
-        for i in confs:
-            jing = """{% for int in interfaces -%}
-    interface {{ name }}
-    ip address {{ ip }} {{ mask }}
-    {% if state == "enabled" -%}
-    no shutdown
-    {% else -%}
-    shutdown
-    {% endif -%}
-    {% endfor -%}
-    !"""
-            vlanTemplate = Template(jing)
-            print (vlanTemplate)
-            return (vlanTemplate.render(
-                        name=i[0], state=i[1], ip=i[2], mask=i[3]
-                        )
-                    )
-    
+    def gen_int(type, name, ip, mask, state):
+        int_template= """interface {{ name }}
+  ip address {{ ip }} {{ mask }}
+{% if state == "enabled" -%}
+  no shutdown
+{% else -%}
+  shutdown
+{% endif -%}
+!"""
+        output = Template(int_template)
+        return (output.render(type=type, name=name, ip=ip, mask=mask, state=state))    
 
 
 class BIRD(Main):  # cisco specific commands
