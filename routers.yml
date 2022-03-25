@@ -1,0 +1,92 @@
+routers:
+  - name: "R1"
+    interfaces:
+
+      - name: "ethernet eth1"
+        state: "disabled"
+        ip: "10.0.0.1"
+        mask: "/24"
+        desc: "to-test"
+
+      - name: "loopback lo"
+        state: "enabled"
+        ip: "1.1.1.1"
+        mask: "/32"
+        desc: "test"
+    
+    bgpasn: "65000"
+    bgp_peers:
+      - ip: "10.0.0.2"
+        remote_as: "65001"
+
+      - ip: "10.0.0.3"
+        remote_as: "65012"
+      
+    bgp_prefixes:
+      - prefix: "5.0.0.0"
+        mask: "/8"
+        state: "enabled"
+
+      - prefix: "6.0.0.0"
+        mask: "/8"
+        state: "enabled"
+
+      - prefix: "7.0.0.0"
+        mask: "/8"
+        state: "enabled"
+
+    ospf_pid: "1"
+    ospf_routerid: "1.1.1.1"
+    use_ospf_routerid: "yes"
+    ospf_networks:
+      - subnet: "192.168.0.0"
+        mask: "/24"
+        area: "0"
+        state: "absent"
+      - subnet: "192.168.2.0"
+        mask: "/24"
+        area: "0"
+        state: "absent"
+
+
+  - name: "R2"
+    interfaces:
+
+      - name: "ethernet eth2"
+        state: "enabled"
+        ip: "10.0.0.1"
+        mask: "/24"
+        desc: "to-voe"
+
+      - name: "loopback lo"
+        state: "enabled"
+        ip: "1.1.1.1"
+        mask: "/32"
+        desc: "test"
+    
+    bgpasn: "65000"
+    bgp_peers:
+      - ip: "10.0.0.2"
+        remote_as: "65001"
+
+    bgp_prefixes:
+      - prefix: "8.0.0.0"
+        mask: "/8"
+        state: "enabled"
+
+      - prefix: "9.9.0.0"
+        mask: "/16"
+        state: "enabled"
+
+    ospf_pid: "1"
+    ospf_routerid: "1.1.1.1"
+    use_ospf_routerid: "yes"
+    ospf_networks:
+      - subnet: "192.168.0.0"
+        mask: "/24"
+        area: "0"
+        state: "absent"
+      - subnet: "192.168.2.0"
+        mask: "/24"
+        area: "0"
+        state: "absent"

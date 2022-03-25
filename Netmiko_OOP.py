@@ -1,6 +1,11 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
 import datetime
+import os
+
+template_path = "C:\\Users\\Usman\\Desktop\\projects\\network-automation\\j2templates"
+vyos_folder = "\\GenVyos"
+cisco_folder = "\\GenCisco"
 
 class Main():
 
@@ -106,6 +111,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         super().__init__("vyos", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
+    def bulk_commands(self, commands):
+        return (self.SSHConnection.send_config_set(commands))
+    
     def get_config(self):
         return (self.SSHConnection.send_command(f'show configuration'))
         
@@ -117,28 +125,11 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
-    
-    def disable_interface(self, interface_type, interface_name):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} disable")
-        self.SSHConnection.commit()
 
     # enable interface (delete disable)
     def delete_disable_interface(self, interface_type, interface_name):
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"delete interfaces {interface_type} {interface_name} disable")
-
-    def set_interfaces_desc(self, interface_type, interface_name, desc):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} description {desc} ")
-
-    def set_interfaces_addr(self, interface_type, interface_name, addr):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} address {addr} ")
-    
-    def set_hostname(self, hostname):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set system host-name {hostname}")
     
     def compare(self):
         return self.SSHConnection.send_command("compare")
@@ -165,7 +156,10 @@ class Cisco_IOS(Main):  # cisco specific commands
     def __init__(self, host, username, password , use_keys, key_file, secret):
         super().__init__("cisco_ios", host, username, password, use_keys, key_file, secret)
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
-    
+
+    def bulk_commands(self, commands):
+        return (self.SSHConnection.send_config_set(commands))
+
     # polymorphism - adds .ios
     def write_file(self, contents, fileName):
         # gets the device type, hostname from self class, and time from get time method 
@@ -210,64 +204,54 @@ class Cisco_IOS(Main):  # cisco specific commands
         # TODO
 
 class GenVyos():
-    def gen_int(type, name, ip, mask, state):
-        template = """{% if state == "enabled" -%}
-set interfaces {{ type }} {{ name }} {{ ip }} {{ mask }}
-{% else -%}
-set interfaces {{ type }} {{ name }} {{ ip }} {{ mask }} disabled {% endif -%}"""
-        output = Template(template)
-        return (output.render(type=type, name=name, ip=ip, mask=mask, state=state))
+    def gen_int(conf):
+        os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
+        raw = open("gen_int.j2")            # opens j2 file
+        j2template = raw.read()             # processes file
+        raw.close()                         # closes file
+        output = Template(j2template)
+        return (output.render(interfaces=conf)) # interfaces var is defined in the jinja template file
 
-    def gen_ospf_network(area, subnet, state):
-        template = """{% if state == "absent" -%}
-        delete protocols ospf area {{ area }} network {{ network }}
-        {% else -%}
-        set protocols ospf area {{ area }} network {{ network }} {% endif -%}"""
-        output = Template(template)
-        return (output.render(area=area, network=subnet, state=state))
+    def gen_ospf_networks(networks):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_ospf_network.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(networks=networks))
 
-    def gen_bgp_peer(localAS, remoteAS, neighborIP, state):
-        template = """{% if state == "absent" -%}
-        delete protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }}{% else -%}
-        set protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }}{% endif -%}"""
-        output = Template(template)
-        return (output.render(localAS=localAS, neighborIP=neighborIP, remoteAS=remoteAS, state=state))
+    def gen_bgp_peer(peers, localAS):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_peer.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(peers=peers, localAS=localAS))
     
-    def gen_bgp_prefix(localAS, addressFamily, prefix, state):
-        template = """{% if state == "absent" -%}
-        delete protocols bgp {{ localAS }} address-family {{ addressFamily }} network {{ prefix }}
-        {% else -%}
-        set protocols bgp {{ localAS }} neighbor {{ neighborIP }} remote-as {{ remoteAS }} {% endif -%}"""
-        output = Template(template)
-        return (output.render(localAS=localAS, addressFamily=addressFamily, prefix=prefix, state=state))
+    def gen_bgp_prefixes(prefixes):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_prefixes.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(prefixes=prefixes))
 
 class GenCisco():        # class for generating configurations using Jinja2
-    def gen_vlan(id, desc, ip, mask, state):
-        vlan_template = """vlan {{ vlan }}
-  name {{ desc }}
-int vlan {{ vlan }}
-  ip address {{ ip }} {{ mask }}
-{% if state == "enabled" -%}
-  no shutdown
-{% else -%}
-  shutdown
-{% endif -%}
-!"""
-        output = Template(vlan_template)
-        return (output.render(vlan=id, vlandesc=desc, ip=ip, mask=mask, state=state)) # left of = is the variables name in the j2 vlan_template, 
-                                                                              # right of = is method parameter
+    def gen_vlan(vlan):
+        os.chdir(template_path+cisco_folder)
+        raw = open("gen_vlan.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(vlan=vlan)) 
 
-    def gen_int(type, name, ip, mask, state):
-        int_template= """interface {{ name }}
-  ip address {{ ip }} {{ mask }}
-{% if state == "enabled" -%}
-  no shutdown
-{% else -%}
-  shutdown
-{% endif -%}
-!"""
-        output = Template(int_template)
-        return (output.render(type=type, name=name, ip=ip, mask=mask, state=state))    
+    def gen_int(interfaces):
+        os.chdir(template_path+cisco_folder)
+        raw = open("gen_int.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(interfaces=interfaces)) # left interfaces var in j2 file,
 
 
 class BIRD(Main):  # cisco specific commands
