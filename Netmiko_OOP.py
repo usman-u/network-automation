@@ -42,6 +42,7 @@ class Main():
                 'secret': self.secret,
             }
 
+    def init_ssh(self):
         # connects to the device via ssh
         print("Connecting to", self.host, "via SSH")
         self.SSHConnection = ConnectHandler(**self.data)
@@ -142,6 +143,41 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         self.SSHConnection.commit()
         print ("committed")
 
+    ### start of generation methods
+
+    def gen_int(conf):
+        os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
+        raw = open("gen_int.j2")            # opens j2 file
+        j2template = raw.read()             # processes file
+        raw.close()                         # closes file
+        output = Template(j2template)
+        return (output.render(interfaces=conf)) # interfaces var is defined in the jinja template file
+
+    def gen_ospf_networks(networks):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_ospf_network.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(networks=networks))
+
+    def gen_bgp_peer(peers, localAS):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_peer.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(peers=peers, localAS=localAS))
+    
+    def gen_bgp_prefixes(prefixes):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_prefixes.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(prefixes=prefixes))
+
+
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
@@ -202,41 +238,9 @@ class Cisco_IOS(Main):  # cisco specific commands
     def run_set_interface_desc(self, new_desc):
         pass
         # TODO
-
-class GenVyos():
-    def gen_int(conf):
-        os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
-        raw = open("gen_int.j2")            # opens j2 file
-        j2template = raw.read()             # processes file
-        raw.close()                         # closes file
-        output = Template(j2template)
-        return (output.render(interfaces=conf)) # interfaces var is defined in the jinja template file
-
-    def gen_ospf_networks(networks):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_ospf_network.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(networks=networks))
-
-    def gen_bgp_peer(peers, localAS):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_bgp_peer.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(peers=peers, localAS=localAS))
     
-    def gen_bgp_prefixes(prefixes):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_bgp_prefixes.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(prefixes=prefixes))
+    ### start of generation methods
 
-class GenCisco():        # class for generating configurations using Jinja2
     def gen_vlan(vlan):
         os.chdir(template_path+cisco_folder)
         raw = open("gen_vlan.j2")
