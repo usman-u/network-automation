@@ -1,5 +1,11 @@
+from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
 import datetime
+import os
+
+template_path = "C:\\Users\\Usman\\Desktop\\projects\\network-automation\\j2templates"
+vyos_folder = "\\GenVyos"
+cisco_folder = "\\GenCisco"
 
 class Main():
 
@@ -36,6 +42,7 @@ class Main():
                 'secret': self.secret,
             }
 
+    def init_ssh(self):
         # connects to the device via ssh
         print("Connecting to", self.host, "via SSH")
         self.SSHConnection = ConnectHandler(**self.data)
@@ -105,6 +112,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         super().__init__("vyos", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
+    def bulk_commands(self, commands):
+        return (self.SSHConnection.send_config_set(commands))
+    
     def get_config(self):
         return (self.SSHConnection.send_command(f'show configuration'))
         
@@ -116,28 +126,11 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
-    
-    def disable_interface(self, interface_type, interface_name):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} disable")
-        self.SSHConnection.commit()
 
     # enable interface (delete disable)
     def delete_disable_interface(self, interface_type, interface_name):
         self.SSHConnection.config_mode()
         self.SSHConnection.send_command(f"delete interfaces {interface_type} {interface_name} disable")
-
-    def set_interfaces_desc(self, interface_type, interface_name, desc):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} description {desc} ")
-
-    def set_interfaces_addr(self, interface_type, interface_name, addr):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set interfaces {interface_type} {interface_name} address {addr} ")
-    
-    def set_hostname(self, hostname):
-        self.SSHConnection.config_mode()
-        self.SSHConnection.send_command(f"set system host-name {hostname}")
     
     def compare(self):
         return self.SSHConnection.send_command("compare")
@@ -146,21 +139,44 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         commands = ["save"]
         self.SSHConnection.send_config_set(commands)
 
-    def OSPF_add_network(self, area, subnet):
-        self.SSHConnection.send_command(f"set protocols ospf area {area} network {subnet}")
-    
-    def BGP_peer(self, localAS, remoteAS, neighborIP):
-        self.SSHConnection.send_command(f"set protocols bgp {localAS} neighbor {neighborIP} remote-as {remoteAS}")
-    
-    def BGP_adv_prefix(self, localAS, addressFamily, prefix):
-        self.SSHConnection.send_command(f"set protocols bgp {localAS} address-family {addressFamily} network {prefix}")
-        
-    def redistr(self, into, redis):
-        self.SSHConnection.send_command(f"set protocols {into} redistribute {redis}")
-
     def commit(self):
         self.SSHConnection.commit()
         print ("committed")
+
+    ### start of generation methods
+
+    def gen_int(conf):
+        os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
+        raw = open("gen_int.j2")            # opens j2 file
+        j2template = raw.read()             # processes file
+        raw.close()                         # closes file
+        output = Template(j2template)
+        return (output.render(interfaces=conf)) # interfaces var is defined in the jinja template file
+
+    def gen_ospf_networks(networks):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_ospf_network.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(networks=networks))
+
+    def gen_bgp_peer(peers, localAS):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_peer.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(peers=peers, localAS=localAS))
+    
+    def gen_bgp_prefixes(prefixes):
+        os.chdir(template_path+vyos_folder)
+        raw = open("gen_bgp_prefixes.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(prefixes=prefixes))
+
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
 
@@ -176,7 +192,10 @@ class Cisco_IOS(Main):  # cisco specific commands
     def __init__(self, host, username, password , use_keys, key_file, secret):
         super().__init__("cisco_ios", host, username, password, use_keys, key_file, secret)
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
-    
+
+    def bulk_commands(self, commands):
+        return (self.SSHConnection.send_config_set(commands))
+
     # polymorphism - adds .ios
     def write_file(self, contents, fileName):
         # gets the device type, hostname from self class, and time from get time method 
@@ -219,6 +238,24 @@ class Cisco_IOS(Main):  # cisco specific commands
     def run_set_interface_desc(self, new_desc):
         pass
         # TODO
+    
+    ### start of generation methods
+
+    def gen_vlan(vlan):
+        os.chdir(template_path+cisco_folder)
+        raw = open("gen_vlan.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(vlan=vlan)) 
+
+    def gen_int(interfaces):
+        os.chdir(template_path+cisco_folder)
+        raw = open("gen_int.j2")
+        j2template = raw.read()
+        output = Template(j2template)
+        raw.close()
+        return (output.render(interfaces=interfaces)) # left interfaces var in j2 file,
 
 
 class BIRD(Main):  # cisco specific commands

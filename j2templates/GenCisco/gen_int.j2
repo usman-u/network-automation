@@ -1,0 +1,10 @@
+{% for int in interfaces -%}}
+interface {{ int.name }}
+  ip address {{ int.ip }} {{ int.mask }}
+{% if state == "enabled" -%}
+  no shutdown
+{% else -%}
+  shutdown
+{% endif -%}
+!
+{% endfor -%}

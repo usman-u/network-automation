@@ -1,0 +1,7 @@
+{% for prefix in prefixes -%}}
+
+{% if prefix.state == "absent" -%}
+delete protocols bgp {{ localAS }} address-family {{ addressFamily }} network {{ prefix }}{% else -%}
+set protocols bgp {{ localAS }} address-family {{ addressFamily }} network {{ prefix }}
+{% endif -%}
+{% endfor -%}
