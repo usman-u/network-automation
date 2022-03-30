@@ -1,4 +1,3 @@
-{% for net in networks %}
-{% if net.state == "absent" -%}
+{% for net in networks %}{% if net.state == "absent" -%}
 delete protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}{% else -%}
 set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }} {% endif -%} {% endfor -%}

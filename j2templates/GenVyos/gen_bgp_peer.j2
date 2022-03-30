@@ -1,6 +1,4 @@
-{% for peer in peers -%}
-{% if peer.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
-{% else -%}
+{% for peer in peers -%}{% if peer.state == "absent" -%}
+delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}{% else -%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
 {% endif -%}{% endfor -%}

@@ -4,5 +4,5 @@ set interfaces {{ int.name }} address {{ int.ip }}{{ int.mask }}{% else -%}
 set interfaces {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled {% endif -%}
 
 {% if int.desc is defined and int.desc|length %}
-set interfaces {{ int.name }} address {{ int.ip }}{{ int.mask }} description "{{ int.desc }}"
+set interfaces {{ int.name }} description '{{ int.desc }}'
 {% endif -%}{% endfor -%}
