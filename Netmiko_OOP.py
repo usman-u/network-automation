@@ -47,7 +47,7 @@ class Main():
         print("Connecting to", self.host, "via SSH")
         self.SSHConnection = ConnectHandler(**self.data)
         print("Connected to", self.host, "via SSH")
-
+    
 
     def validate_is_string(self, inp):
         if type(inp) != str:
@@ -63,6 +63,12 @@ class Main():
         if inp != "cisco_ios" or inp != "ubiquiti_edgerouter" or inp != "vyos":
             raise ValueError ("This framework only supports cisco_ios, vyos, and ubiquti_edgerouter. \n Likely error in device_type.")
         return inp # returns inp if the input is valid (3 specified strings)
+
+    def conv_jinja_to_arr(jinja_output):        # converts string into array of commands (at \n linebreaks)
+        array = []                              # creates new array
+        for line in jinja_output.splitlines():  # at every line in the split string
+            array.append(line)                  # append line to the array
+        return (array)                          # return array
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
 
@@ -112,14 +118,28 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         super().__init__("vyos", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
+    def single_command(self, command):
+        return (self.SSHConnection.send_command(command))
+
     def bulk_commands(self, commands):
+        self.SSHConnection.config_mode()
         return (self.SSHConnection.send_config_set(commands))
-    
+
+    def config_mode(self):
+        self.SSHConnection.config_mode()
+
+    def commit(self):
+        self.SSHConnection.commit()
+        return ("Committed")
+
+    def save_config(self):
+        self.SSHConnection.send_command("save")
+
     def get_config(self):
-        return (self.SSHConnection.send_command(f'show configuration'))
+        return (self.SSHConnection.send_command('show configuration'))
         
     def get_config_commands(self):
-        return (self.SSHConnection.send_command(f'show configuration commands'))
+        return (self.SSHConnection.send_command('show configuration commands'))
     
     def get_bgp_neighbors(self):
         return (self.SSHConnection.send_command("show ip bgp summary"))
@@ -135,15 +155,16 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def compare(self):
         return self.SSHConnection.send_command("compare")
 
-    def save_config(self):
-        commands = ["save"]
-        self.SSHConnection.send_config_set(commands)
+    ### start of config generation methods
 
-    def commit(self):
-        self.SSHConnection.commit()
-        print ("committed")
-
-    ### start of generation methods
+    def gen_hostname(hostname):
+        os.chdir(template_path+vyos_folder)                          # navigates to dir containing vyos templates
+        raw = open("gen_hostname.j2")                                # opens hostname jinja template file
+        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
+        raw.close()                                                  # closes hostname template file file
+        output = Template(j2template)                                # associates jinja hostname template with output
+        rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(conf):
         os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
@@ -151,31 +172,35 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         j2template = raw.read()             # processes file
         raw.close()                         # closes file
         output = Template(j2template)
-        return (output.render(interfaces=conf)) # interfaces var is defined in the jinja template file
+        rendered = (output.render(interfaces=conf))
+        return Main.conv_jinja_to_arr(rendered)
 
-    def gen_ospf_networks(networks):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_ospf_network.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(networks=networks))
+    def gen_ospf_networks(networks):                      
+        os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_ospf_network.j2")                             # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_bgp_peer(peers, localAS):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_bgp_peer.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(peers=peers, localAS=localAS))
+        os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_bgp_peer.j2")                                 # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(peers=peers, localAS=localAS))      # renders template, with paramaters 'peers' & 'localAS', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
     
     def gen_bgp_prefixes(prefixes):
-        os.chdir(template_path+vyos_folder)
-        raw = open("gen_bgp_prefixes.j2")
-        j2template = raw.read()
-        output = Template(j2template)
-        raw.close()
-        return (output.render(prefixes=prefixes))
+        os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_bgp_prefixes.j2")                             # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(prefixes=prefixes))                 # renders template, with paramater 'prefixes', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
@@ -194,7 +219,7 @@ class Cisco_IOS(Main):  # cisco specific commands
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
-        return (self.SSHConnection.send_config_set(commands))
+        self.SSHConnection.send_config_set(commands)
 
     # polymorphism - adds .ios
     def write_file(self, contents, fileName):
@@ -208,7 +233,6 @@ class Cisco_IOS(Main):  # cisco specific commands
         file.close()
 
     def get_all_config(self):
-
         self.SSHConnection.enable()
         result = (self.SSHConnection.send_command('show run', use_textfsm=True)) 
         self.SSHConnection.exit_enable_mode()
