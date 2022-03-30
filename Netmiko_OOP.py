@@ -167,13 +167,13 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(conf):
-        os.chdir(template_path+vyos_folder) # navigates to dir containing vyos templates
-        raw = open("gen_int.j2")            # opens j2 file
-        j2template = raw.read()             # processes file
-        raw.close()                         # closes file
-        output = Template(j2template)
-        rendered = (output.render(interfaces=conf))
-        return Main.conv_jinja_to_arr(rendered)
+        os.chdir(template_path+vyos_folder)                          # navigates to dir containing vyos templates
+        raw = open("gen_int.j2")                                     # opens hostname jinja template file
+        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
+        raw.close()                                                  # closes hostname template file file
+        output = Template(j2template)                                # associates jinja hostname template with output
+        rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
+        return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_ospf_networks(networks):                      
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
