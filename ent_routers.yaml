@@ -1,0 +1,171 @@
+routers:
+  - name: "ENT-CORE-01"
+    SSH_conf:
+      hostname: "10.0.30.201"
+      username: "usman"
+      password: "usman"
+      use_keys: False
+      key_location: ""
+      secret: "cisco"
+
+    interfaces:
+      - name: "loopback 0"
+        state: "enabled"
+        ip: "10.100.0.1"
+        mask: "255.255.255.255"
+        desc: "OSPF-RID"
+
+      - name: "e 1/0"
+        state: "enabled"
+        ip: "172.16.0.1"
+        mask: "255.255.255.252"
+        desc: "TO-CORE-2"
+
+      - name: "e 1/1"
+        state: "enabled"
+        ip: "172.16.1.1"
+        mask: "255.255.255.252"
+        desc: "TO-DIST-1"
+    
+    # bgpasn: "65000"
+    # bgp_peers:
+    #   - ip: "10.0.0.2"
+    #     remote_as: "65001"
+
+    #   - ip: "10.0.0.3"
+    #     remote_as: "65012"
+
+    ospf_routerid: ""
+    use_ospf_routerid: "no"
+    ospf_networks:
+      - subnet: "172.16.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+      - subnet: "10.100.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+  
+
+  - name: "ENT-CORE-02"
+    SSH_conf:
+      hostname: "10.0.30.202"
+      username: "usman"
+      password: "usman"
+      use_keys: False
+      key_location: ""
+      secret: "cisco"
+
+    interfaces:
+      - name: "loopback 0"
+        state: "enabled"
+        ip: "10.100.0.2"
+        mask: "255.255.255.255"
+        desc: "OSPF-RID"
+
+      - name: "e 1/0"
+        state: "enabled"
+        ip: "172.16.0.2"
+        mask: "255.255.255.252"
+        desc: "TO-CORE-1"
+
+      - name: "e 1/1"
+        state: "enabled"
+        ip: "172.16.2.1"
+        mask: "255.255.255.252"
+        desc: "TO-DIST-2"
+
+    ospf_networks:
+      - subnet: "172.16.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+      - subnet: "10.100.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+
+
+
+
+  - name: "ENT-DIST-01"
+    SSH_conf:
+      hostname: "10.0.30.203"
+      username: "usman"
+      password: "usman"
+      use_keys: False
+      key_location: ""
+      secret: "cisco"
+
+    interfaces:
+      - name: "loopback 0"
+        state: "enabled"
+        ip: "10.100.0.3"
+        mask: "255.255.255.255"
+        desc: "OSPF-RID"
+
+      - name: "e 1/0"
+        state: "enabled"
+        ip: "172.16.3.1"
+        mask: "255.255.255.252"
+        desc: "TO-DIST-2"
+
+      - name: "e 1/1"
+        state: "enabled"
+        ip: "172.16.1.2"
+        mask: "255.255.255.252"
+        desc: "TO-CORE-1"
+
+    ospf_networks:
+      - subnet: "172.16.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+      - subnet: "10.100.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+  - name: "ENT-DIST-2"
+    SSH_conf:
+      hostname: "10.0.30.204"
+      username: "usman"
+      password: "usman"
+      use_keys: False
+      key_location: ""
+      secret: "cisco"
+
+    interfaces:
+      - name: "loopback 0"
+        state: "enabled"
+        ip: "10.100.0.4"
+        mask: "255.255.255.255"
+        desc: "OSPF-RID"
+
+      - name: "e 1/0"
+        state: "enabled"
+        ip: "172.16.3.2"
+        mask: "255.255.255.252"
+        desc: "TO-DIST-1"
+
+      - name: "e 1/1"
+        state: "enabled"
+        ip: "172.16.2.2"
+        mask: "255.255.255.252"
+        desc: "TO-CORE-2"
+
+    ospf_networks:
+      - subnet: "172.16.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
+
+      - subnet: "10.100.0.0"
+        mask: "0.0.255.255"
+        area: "0"
+        state: "present"
