@@ -219,7 +219,8 @@ class Cisco_IOS(Main):  # cisco specific commands
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
-        self.SSHConnection.send_config_set(commands)
+        self.SSHConnection.enable()
+        return (self.SSHConnection.send_config_set(commands))
 
     # polymorphism - adds .ios
     def write_file(self, contents, fileName):
@@ -271,7 +272,8 @@ class Cisco_IOS(Main):  # cisco specific commands
         j2template = raw.read()
         output = Template(j2template)
         raw.close()
-        return (output.render(vlan=vlan)) 
+        rendered = (output.render(vlan=vlan)) 
+        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(interfaces):
         os.chdir(template_path+cisco_folder)
@@ -279,7 +281,26 @@ class Cisco_IOS(Main):  # cisco specific commands
         j2template = raw.read()
         output = Template(j2template)
         raw.close()
-        return (output.render(interfaces=interfaces)) # left interfaces var in j2 file,
+        rendered = (output.render(interfaces=interfaces)) # left interfaces var in j2 file,
+        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+    def gen_hostname(hostname):
+        os.chdir(template_path+cisco_folder)                          # navigates to dir containing vyos templates
+        raw = open("gen_hostname.j2")                                # opens hostname jinja template file
+        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
+        raw.close()                                                  # closes hostname template file file
+        output = Template(j2template)                                # associates jinja hostname template with output
+        rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+    def gen_ospf_networks(networks):                      
+        os.chdir(template_path+cisco_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_ospf_network.j2")                             # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
 class BIRD(Main):  # cisco specific commands

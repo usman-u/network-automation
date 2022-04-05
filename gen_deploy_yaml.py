@@ -29,7 +29,7 @@ for device in raw["routers"]:
 
     ospf_networks = device.get("ospf_networks")
     if ospf_networks != None:
-        to_deploy.append (Vyos.gen_ospf_networks(device["ospf_networks"]))
+        to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
 
     print (to_deploy)
 
