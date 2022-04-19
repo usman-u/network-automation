@@ -1,4 +1,5 @@
 {% for int in interfaces -%}
+
 {% if int.state == "absent" -%} 
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled{% else -%}
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} {% endif -%}
@@ -6,12 +7,19 @@ set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} 
 set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
 {%if int.firewall %}{%for fw in int.firewall -%}
 set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
-{% endfor -%} {%endif -%}
+{% endfor -%}
+{%endif -%}
 {%if int.type == "wireguard" -%}
 {% for peer in int.wg_peers -%}
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
-{% if peer.endpoint %}set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} endpoint '{{ peer.endpoint }}'{% endif %}
-{% if peer.keepalive %}set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'{% endif %}
+{% if peer.endpoint is defined and peer.endpoint|length -%}
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} endpoint '{{ peer.endpoint }}'
+{% endif -%}
+{% if peer.keepalive is defined and peer.keepalive|length -%}
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'
+{% endif -%}
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ peer.pubkey }}'
-{% endfor -%}{% endif -%}
-{% endif -%}{% endfor -%}
+{% endfor -%}
+{% endif -%}
+{% endif -%}
+{% endfor -%}
