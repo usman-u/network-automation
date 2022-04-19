@@ -1,4 +1,25 @@
-{% for peer in peers -%}{% if peer.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}{% else -%}
+{%for peer in peers -%}
+
+{%if peer.state == "absent" -%}
+delete protocols bgp {{ localAS }} neighbor {{ peer.ip }}
+{% else -%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
-{% endif -%}{% endfor -%}
+{%if peer.desc is defined and peer.desc|length -%}
+set protocols bgp {{ localAS }} neighbor {{ peer.ip }} description {{ peer.desc }}
+{% endif -%}
+
+{%if peer.ebgp_multihop is defined and peer.ebgp_multihop|length -%}
+set protocols bgp {{ localAS }} neighbor {{ peer.ip }} ebgp-multihop {{ peer.ebgp_multihop }}
+{% endif -%}
+
+{%if peer.route_maps -%}
+{%for rm in peer.route_maps -%}  
+{%if rm.state == "absent" -%}
+delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% else -%}
+set protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{%endif -%}
+{%endfor -%}
+{%endif -%} 
+{%endif -%}
+{% endfor -%}

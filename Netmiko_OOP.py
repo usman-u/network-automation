@@ -193,15 +193,34 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         rendered = (output.render(peers=peers, localAS=localAS))      # renders template, with paramaters 'peers' & 'localAS', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
     
-    def gen_bgp_prefixes(prefixes):
+    def gen_bgp_prefixes(prefixes, localAS):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
         raw = open("gen_bgp_prefixes.j2")                             # opens hostname jinja template file
         j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
         output = Template(j2template)                                 # closes hostname template file file
         raw.close()                                                   # associates jinja hostname template with output
-        rendered = (output.render(prefixes=prefixes))                 # renders template, with paramater 'prefixes', and stores output in 'rendered' var
+        rendered = (output.render(prefixes=prefixes, localAS=localAS))# renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
+
+    def gen_static(static_routes):
+        os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_static.j2")                                   # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(static=static_routes))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+
+    def gen_firewalls(firewalls):
+        os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
+        raw = open("gen_firewalls.j2")                                # opens hostname jinja template file
+        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
+        output = Template(j2template)                                 # closes hostname template file file
+        raw.close()                                                   # associates jinja hostname template with output
+        rendered = (output.render(firewalls=firewalls))               # renders template, with paramater 'prefixes', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
 
@@ -301,25 +320,3 @@ class Cisco_IOS(Main):  # cisco specific commands
         raw.close()                                                   # associates jinja hostname template with output
         rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
-
-
-class BIRD(Main):  # cisco specific commands
-
-    # inherits all methods and attributes from MAIN class
-    # sends 'linux' as an argument, so user doesn't have to specify device_type
-    def __init__(self, host, username, password , use_keys, key_file, secret):
-        super().__init__("linux", host, username, password, use_keys, key_file, secret)
-        # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
-    
-    def get_bgp_route(self, target):
-        return (self.SSHConnection.send_command(f"sudo su; birdc show ip bgp {target}"))
-
-    # TODO fix BIRD multi-line command (login as root for birdc)
-    def get_birdc_protocols(self):
-        return (self.SSHConnection.send_command(f"""
-        sudo su
-        birdc show protocols
-    """))
-
-    def run_traceroute(self, target):
-        return (self.SSHConnection.send_command(f"traceroute {target}"))
