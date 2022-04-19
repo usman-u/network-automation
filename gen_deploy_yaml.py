@@ -39,15 +39,18 @@ for device in raw["routers"]:
     if static_routes != None:
         to_deploy.append(Vyos.gen_static(static_routes))
 
-    # print (to_deploy)
-    for i in to_deploy:
-        for j in i:
-            print (j)
+    see_commands = input("Do you want to see the individual commands? Y/N [Y]")
+    if see_commands == "N":  # default is no, due to verbosity of commands
+        pass
+    else:
+        for i in to_deploy:  # loops through command arrays
+            for j in i:
+                print (j)    # and prints them
 
-    deploy = input("\nRead modifications; Y to deploy; N to discard")
+    deploy = input("Start Deployment? Y/N [Y]")
 
     if deploy == "Y":   # calls Vyos method from OOP, with config from yml file as parms.
-        router1 = Vyos(
+        router = Vyos(
             device["SSH_conf"]["hostname"],
             device["SSH_conf"]["username"],
             device["SSH_conf"]["password"],
@@ -55,8 +58,24 @@ for device in raw["routers"]:
             device["SSH_conf"]["key_location"],
             device["SSH_conf"]["secret"],
         )
-        Vyos.init_ssh(router1)               # starts the SSH connection
-        Vyos.config_mode(router1)            # enters Vyos config mode
-        for i in to_deploy:                  # for every code block generated (every dimension in arr)
-            Vyos.bulk_commands(router1, i)   # send commands over SSH
-        Vyos.commit(router1)                 # send the commit command to the Vyos router
+        Vyos.init_ssh(router)               # starts the SSH connection
+        Vyos.config_mode(router)            # enters Vyos config mode
+        for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
+            Vyos.bulk_commands(router, i)   # send commands over SSH
+
+        verify_commit = input("Do you want to check the command conflicts before comitting? Y//N [Y]") 
+        if verify_commit == "N":
+            Vyos.commit(router)                 # send the commit command to the Vyos router
+        else:
+            print (Vyos.get_changed(router))
+        commit = input("Do you want to commit Y/N [N]")
+        if commit == "N":
+            Vyos.discard_changes(router)
+        else:
+            Vyos.commit(router)
+
+        save = input("Do you want to save the configuration to disk? Y/N [N]")
+        if save == "Y" or save == "y":
+            print (Vyos.save_config(router))
+        else:
+            print ("Config not saved to disk")

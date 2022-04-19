@@ -128,12 +128,15 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def config_mode(self):
         self.SSHConnection.config_mode()
 
+    def discard_changes(self):
+        return (self.SSHConnection.send_command("discard"))
+
     def commit(self):
         self.SSHConnection.commit()
         return ("Committed")
 
     def save_config(self):
-        self.SSHConnection.send_command("save")
+        return self.SSHConnection.send_command("save")
 
     def get_config(self):
         return (self.SSHConnection.send_command('show configuration'))
@@ -146,6 +149,10 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces"))
+    
+    def get_changed(self):
+        return (self.SSHConnection.send_command("compare"))
+
 
     # enable interface (delete disable)
     def delete_disable_interface(self, interface_type, interface_name):
