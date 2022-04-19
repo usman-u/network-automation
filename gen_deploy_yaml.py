@@ -1,7 +1,7 @@
 from Netmiko_OOP import *
 import yaml
 
-with open("routers.yml") as file: # opens the yaml file
+with open("dn42.yml") as file: # opens the yaml file
     raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
     
 for device in raw["routers"]:
@@ -25,13 +25,24 @@ for device in raw["routers"]:
     
     bgp_prefixes = device.get("bgp_prefixes")
     if bgp_prefixes != None:
-        to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes))
+        to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes, bgpasn))
 
     ospf_networks = device.get("ospf_networks")
     if ospf_networks != None:
         to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
+    
+    firewalls = device.get("firewalls")
+    if firewalls != None:
+        to_deploy.append(Vyos.gen_firewalls(firewalls))
 
-    print (to_deploy)
+    static_routes = device.get("static")
+    if static_routes != None:
+        to_deploy.append(Vyos.gen_static(static_routes))
+
+    # print (to_deploy)
+    for i in to_deploy:
+        for j in i:
+            print (j)
 
     deploy = input("\nRead modifications; Y to deploy; N to discard")
 
