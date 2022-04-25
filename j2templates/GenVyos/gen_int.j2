@@ -1,14 +1,17 @@
 {% for int in interfaces -%}
-
 {% if int.state == "absent" -%} 
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled{% else -%}
+set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled
+{% else %}
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} {% endif -%}
+
 {% if int.desc and int.desc|length %}
 set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+{% endif -%}
+
 {%if int.firewall %}{%for fw in int.firewall -%}
 set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
-{%endif -%}
+
 {%if int.type == "wireguard" -%}
 {% for peer in int.wg_peers -%}
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'

@@ -1,0 +1,40 @@
+{% for dhserver in dhservers -%}
+
+{% if dhserver.subnet is defined and dhserver.subnet|length -%}
+{% if dhserver.default_router is defined and dhserver.default_router|length %}
+set service dhcp-server shared-network-name {{ dhserver.name }} subnet  {{ dhserver.subnet }}
+set service dhcp-server shared-network-name {{dhserver.name}} subnet  {{ dhserver.subnet }} default-router {{ dhserver.default_router }}
+{%endif -%}
+{%endif -%}
+
+{% if dhserver.domain_name is defined and dhserver.domain_name|length -%}
+set service dhcp-server shared-network-name {{ dhserver.name }} domain-name {{ dhserver.doman_name }}
+{% endif -%}
+
+{% if dhserver.name_server is defined and dhserver.name_server|length -%}
+set service dhcp-server shared-network-name {{ dhserver.name }} subnet {{ dhserver.subnet }} name-server {{ dhserver.name_server}}
+{% endif -%}
+
+{% if dhserver.lease_time is defined and dhserver.lease_time|length -%}
+set service dhcp-server shared-network-name {{ dhserver.name }} subnet {{ dhserver.subnet }} lease {{ dhserver.lease_time }}
+{% endif -%}
+
+{% if dhserver.authoritative == "true" -%}
+set service dhcp-server shared-network-name {{ dhserver.name }} authoritative
+{% endif -%}
+
+{% if dhserver.exclude_addrs is defined and dhserver.exclude_addrs -%}
+{% for addr in dhserver.exclude_addrs -%}
+set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} exclude {{ addr.ip }}
+{% endfor -%}
+{% endif -%}
+
+
+{%if dhserver.dhcp_reserv is defined and dhserver.dhcp_reserv -%}
+{%for reserv in dhserver.dhcp_reserv -%}
+set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} static-mapping {{reserv.desc}} mac-address {{ reserv.mac }}
+set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} static-mapping {{reserv.desc}} ip-address {{reserv.ip}}
+{%endfor -%}
+{%endif -%}
+
+{%endfor -%}
