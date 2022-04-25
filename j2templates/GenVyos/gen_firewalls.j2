@@ -25,9 +25,9 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.p
 {% if rule.states is defined -%}
 {% for state in rule.states -%}
 {% if state.status == "absent" -%}
-delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enabled 
+delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
 {% else -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enabled 
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
 {% endif -%}
 {% endfor -%}
 {% endif -%}
