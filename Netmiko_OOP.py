@@ -167,7 +167,6 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def gen_hostname(hostname):
         os.chdir(template_path+vyos_folder)                          # navigates to dir containing vyos templates
-        raw = open("gen_hostname.j2")                                
         with open("gen_hostname.j2") as raw:                         # opens hostname jinja template file
             j2template = raw.read()                                  # reads hostname template file, stores it in j2template var
         output = Template(j2template)                                # associates jinja hostname template with output
