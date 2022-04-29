@@ -1,4 +1,3 @@
-from audioop import add
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
 import datetime
@@ -168,76 +167,69 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def gen_hostname(hostname):
         os.chdir(template_path+vyos_folder)                          # navigates to dir containing vyos templates
-        raw = open("gen_hostname.j2")                                # opens hostname jinja template file
-        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
-        raw.close()                                                  # closes hostname template file file
+        raw = open("gen_hostname.j2")                                
+        with open("gen_hostname.j2") as raw:                         # opens hostname jinja template file
+            j2template = raw.read()                                  # reads hostname template file, stores it in j2template var
         output = Template(j2template)                                # associates jinja hostname template with output
         rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(conf):
         os.chdir(template_path+vyos_folder)                          # navigates to dir containing vyos templates
-        raw = open("gen_int.j2")                                     # opens hostname jinja template file
-        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
-        raw.close()                                                  # closes hostname template file file
+        with open("gen_int.j2") as raw:                              # opens interface jinja template file
+            j2template = raw.read()                                  # reads interface template file, stores it in j2template var
         output = Template(j2template)                                # associates jinja hostname template with output
         rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
         return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_ospf_networks(networks):                      
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_ospf_network.j2")                             # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        with open("gen_ospf_network.j2") as raw:                      # opens ospf jinja template file
+            j2template = raw.read()                                   # reads ospf template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_bgp_peer(peers, localAS):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_bgp_peer.j2")                                 # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        with open("gen_bgp_peer.j2") as raw:                          # opens bgp peer jinja template file
+            j2template = raw.read()                                   # reads bgp peer template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(peers=peers, localAS=localAS))      # renders template, with paramaters 'peers' & 'localAS', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
     
     def gen_bgp_prefixes(prefixes, localAS):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_bgp_prefixes.j2")                             # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        with open("gen_bgp_prefixes.j2") as raw:                      # opens bgp prefix jinja template file
+            j2template = raw.read()                                   # reads bgp prefix template file, stores it in j2template var
+        output = Template(j2template)                                 # closes bgp prefix template file file
         rendered = (output.render(prefixes=prefixes, localAS=localAS))# renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
     def gen_static(static_routes):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_static.j2")                                   # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        with open("gen_static.j2") as raw:                            # opens static jinja template file
+            j2template = raw.read()                                   # reads static template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(static=static_routes))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
     def gen_firewalls(firewalls):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_firewalls.j2")                                # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        with open("gen_firewalls.j2") as raw:                         # opens fw jinja template file
+            j2template = raw.read()                                   # reads fw template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(firewalls=firewalls))               # renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_dhcp(dhcp):
         os.chdir(template_path+vyos_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_dhcp.j2")                                     # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
-        rendered = (output.render(dhservers=dhcp))                         # renders template, with paramater 'prefixes', and stores output in 'rendered' var
+        with open ("gen_dhcp.j2") as raw:                             # opens dhcp jinja template file
+            j2template = raw.read()                                   # reads dhcp template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(dhservers=dhcp))                    # renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
     
     def deploy_yaml(ymlfile):
@@ -410,20 +402,18 @@ class Cisco_IOS(Main):  # cisco specific commands
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_hostname(hostname):
-        os.chdir(template_path+cisco_folder)                          # navigates to dir containing vyos templates
-        raw = open("gen_hostname.j2")                                # opens hostname jinja template file
-        j2template = raw.read()                                      # reads hostname template file, stores it in j2template var
-        raw.close()                                                  # closes hostname template file file
+        os.chdir(template_path+cisco_folder)                         # navigates to dir containing vyos templates
+        with open("gen_hostname.j2") as raw:                         # opens ospf nets jinja template file
+            j2template = raw.read()                                  # reads ospf nets template file, stores it in j2template var
         output = Template(j2template)                                # associates jinja hostname template with output
         rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_ospf_networks(networks):                      
-        os.chdir(template_path+cisco_folder)                           # navigates to dir containing vyos templates
-        raw = open("gen_ospf_network.j2")                             # opens hostname jinja template file
-        j2template = raw.read()                                       # reads hostname template file, stores it in j2template var
-        output = Template(j2template)                                 # closes hostname template file file
-        raw.close()                                                   # associates jinja hostname template with output
+        os.chdir(template_path+cisco_folder)                          # navigates to dir containing vyos templates
+        with open("gen_ospf_network.j2") as raw:                      # opens ospf nets jinja template file
+            j2template = raw.read()                                   # reads ospf nets template file, stores it in j2template var
+        output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
