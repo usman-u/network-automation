@@ -276,16 +276,20 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                 to_deploy.append(Vyos.gen_dhcp(dhservers))
 
             see_commands = input("Do you want to see the individual commands? Y/N [Y]")
-            if see_commands == "N":  # default is no, due to verbosity of commands
+            if see_commands == "N" or  see_commands == "n":  # default is yes
                 pass
-            else:
+            
+            else:                    # shows commands
                 for i in to_deploy:  # loops through command arrays
                     for j in i:
                         print (j)    # and prints them
 
             deploy = input("Start Deployment? Y/N [Y]")
 
-            if deploy == "Y":   # calls Vyos method from OOP, with config from yml file as parms.
+            if deploy == "N" or deploy == "n": # default is yes
+                pass
+
+            else:   # calls Vyos method from OOP, with config from yml file as parms.
                 router = Vyos(
                     device["SSH_conf"]["hostname"],
                     device["SSH_conf"]["username"],
