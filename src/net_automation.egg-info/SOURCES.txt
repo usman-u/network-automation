@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/net-automation/__init__.py
+src/net-automation/net-automation.py
+src/net_automation.egg-info/PKG-INFO
+src/net_automation.egg-info/SOURCES.txt
+src/net_automation.egg-info/dependency_links.txt
+src/net_automation.egg-info/top_level.txt
