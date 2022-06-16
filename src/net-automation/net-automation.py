@@ -4,7 +4,7 @@ import datetime
 import os
 import yaml
 
-template_path = "C:\\Users\\Usman\\Desktop\\projects\\network-automation\\j2templates"
+template_path = "C:\\Users\\Usman\\Desktop\\projects\\network-automation\\src\\net-automation\\j2templates"
 vyos_folder = "\\GenVyos"
 cisco_folder = "\\GenCisco"
 
