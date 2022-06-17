@@ -1,7 +1,0 @@
-{% for vlan in vlans %}}
-vlan {{ vlan.id }}
-  name {{ desc }}
-{% if vlan.state == "disabled" -%}
-  shutdown
-{% endif -%}
-{% endfor -%}}

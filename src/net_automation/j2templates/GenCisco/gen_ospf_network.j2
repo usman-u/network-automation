@@ -1,7 +1,0 @@
-router ospf 1
-{% for net in networks %}
-{% if net.state == "absent" -%}
- no network {{ net.subnet }} {{ net.mask }} area {{ net.area }}
-{% else -%}
- network {{ net.subnet }} {{ net.mask }} area {{ net.area }}{% endif -%}
-{% endfor -%} 
