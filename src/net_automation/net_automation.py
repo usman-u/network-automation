@@ -4,10 +4,6 @@ import datetime
 import os
 import yaml
 
-template_path = os.getcwd() + r"\j2templates"
-vyos_folder = r"\GenVyos"
-cisco_folder = r"\GenCisco"
-
 class Main():
 
     # attributes are standard for netmiko functionality

@@ -1,17 +1,3 @@
-Metadata-Version: 2.1
-Name: net-automation-usman-u
-Version: 0.0.4
-Summary: Network Automation
-Home-page: https://github.com/usman-umer/network-automation
-Author: Usman-U
-Author-email: unumer@hotmail.com
-Classifier: Programming Language :: Python :: 3
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
-Requires-Python: >=3.6
-Description-Content-Type: text/markdown
-License-File: LICENSE
-
 # Network Automation
 
 An *Ansible like* Network Automation Framework, Using Python OOP and Netmiko to interface with Cisco IOS, VyOS, EdgeOS network devices.
