@@ -6,11 +6,11 @@ An *Ansible like* Network Automation Framework, Using Python OOP and Netmiko to 
 
 ## Example 1: Getting Basic Device Information from a VyOS Router 
 Importing the class from the package.
-```
+```py
 from net_automation import net_automation
 ```
 Creating an instance of the VyOS class, with specified parameters.
-```
+```py
 router_1 = net_automation.Vyos(
     "router-1.com",                                                      # Hostname/IP
     "username",                                                          # Username
@@ -20,7 +20,7 @@ router_1 = net_automation.Vyos(
     "")                                                                  # Secret (left empty, as Cisco Only)
 ```
 Establishing the SSH connection to "router_1" and getting interfaces.
-```
+```py
 router_1.init_ssh()                                                      # Creates the SSH connection to the VyOS router
 
 print (router_1.get_interfaces())                                        # Returns Interfaces from the VyOS router
@@ -36,7 +36,7 @@ wg12             172.22.132.170/30                 u/u  p2p_usman
 
 ```
 Getting a traceroute to "8.8.8.8".
-```
+```py
 print (router_1.get_route("8.8.8.8"))                                   # Returns traceroute to specific IP
 
 traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets
@@ -57,15 +57,15 @@ route_table = (router_1.get_route_table())
 ---
 
 ## Example 2: Generating and Deploying Configurations to a VyOS Router.
-###`.py` file
-```
+### .py file
+```py
 from net_automation import net_automation
 
 net_automation.Vyos.deploy_yaml("router.yml")
 ```
 Executing the Python script should generate and deploy configs, based on the contents of the YAML file. 
 ### `router.yml` file
-```
+```yaml
 routers:
   - name: "vyos-dn42-01"
     SSH_conf:
@@ -154,7 +154,7 @@ routers:
 
 ## Example 3: Backing up device configurations.
 Creating instances CiscoIOS and EdgeOS classes, for Cisco switches and Ubiquiti switches.
-```
+```py
 cisco_2960 = net_automation.Cisco_IOS(
     "cisco-2960.lan",
     "usman",
@@ -188,7 +188,7 @@ ubiquiti_er4 = net_automation.EdgeOS(
     "")
 ```
 For loops that get device configurations and writes them to external files.
-```
+```py
 cisco_switches = [cisco_2960, cisco_3560]
 
 for device in cisco_switches:                                                               # iterates through the "cisco_switches" array and:
@@ -196,7 +196,7 @@ for device in cisco_switches:                                                   
     Cisco_IOS.write_file(device, to_write, "")                                              # writes the output to new files                            
 ```
 
-```
+```py
 ubiquti_routers = [ubiquiti_erx, ubiquiti_er4]
 
 for device in ubiquti_routers:                                                              # iterates through the "ubiquiti_routers" array and:
