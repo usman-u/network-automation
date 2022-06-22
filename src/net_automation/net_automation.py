@@ -253,6 +253,56 @@ set protocols bgp {{ localAS }} address-family {{ prefix.address_family }} netwo
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
+
+    def gen_route_map(route_maps):
+        j2template = """
+{%- for map in route_maps -%}
+
+{%if map.desc is defined and map.desc|length -%}
+set policy route-map {{ map.name }} description '{{map.desc}}'
+{%endif-%}
+
+{%- for rule in map.rules -%}
+
+{%if rule.state == "absent" -%}
+delete policy route-map {{ map.name }} rule {{ rule.rule_no }}
+
+{% else -%}
+set policy route-map {{ map.name }} rule {{ rule.rule_no }} action {{ rule.action }}
+set policy route-map {{ map.name }} rule {{ rule.rule_no }} match {{ rule.match }}
+{%endif-%}
+{% endfor -%}{% endfor -%}"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(route_maps=route_maps))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+
+    def gen_prefix_list(prefix_lists):
+        j2template = """
+{%- for list in prefix_lists -%}
+
+{%if list.desc is defined and list.desc|length -%}
+set policy prefix-list {{ list.name }} description '{{ list.desc }}'
+{%endif-%}
+
+{%- for rule in list.rules -%}
+
+{%if rule.state == "absent" -%}
+delete policy prefix-list {{ list.name }} rule {{ rule.rule_no }}
+
+{% else -%}
+set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} action {{ rule.action }}
+set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} {{ rule.match[0]["length"] }}
+set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} prefix {{ rule.match[0]["prefix"] }}
+{%endif-%}
+{% endfor -%}{% endfor -%}"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(prefix_lists=prefix_lists))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+
+
+
     def gen_static(static_routes):
         j2template = """{% for route in static -%}
 {% if route.state == "absent" -%}
@@ -392,6 +442,14 @@ set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.
             if bgp_prefixes != None:
                 to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes, bgpasn))
 
+            route_maps = device.get("route_maps")
+            if route_maps != None:
+                to_deploy.append (Vyos.gen_route_map(route_maps))
+
+            prefix_lists = device.get("prefix_lists")
+            if prefix_lists != None:
+                to_deploy.append (Vyos.gen_prefix_list(prefix_lists))
+
             ospf_networks = device.get("ospf_networks")
             if ospf_networks != None:
                 to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
@@ -434,7 +492,7 @@ set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.
                 Vyos.init_ssh(router)               # starts the SSH connection
                 Vyos.config_mode(router)            # enters Vyos config mode
                 for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
-                    print (Vyos.bulk_commands(router, i))   # send commands over SSH
+                    Vyos.bulk_commands(router, i)   # send commands over SSH
 
                 verify_commit = input("Do you want to check the command conflicts before comitting? Y//N [Y]") 
                 if verify_commit == "N":                                 # asks to check conflicts
