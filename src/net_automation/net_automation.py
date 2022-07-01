@@ -590,13 +590,54 @@ vlan {{ vlan.id }}
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(interfaces):
-        j2template = """{% for vlan in vlans %}}
-vlan {{ vlan.id }}
-  name {{ desc }}
-{% if vlan.state == "disabled" -%}
-  shutdown
+        j2template = """
+{% for int in interfaces -%}
+
+{% if int.state == 'absent' -%}
+interface {{ int.name }}
+shutdown
 {% endif -%}
-{% endfor -%}}"""
+interface {{ int.name }}
+description {{ int.desc }}
+{% if int.routed == True -%}
+no switchport
+ip address {{int.ip}} {{int.mask}}
+{% endif -%}
+
+
+{% if int.mode == "trunk" -%}
+switchport mode trunk
+{% endif -%}
+
+{% if int.native_vlan is defined and int.native_vlan|length -%}
+switchport trunk native vlan {{ int.native_vlan}}
+{% endif -%}
+
+{% if int.spanning_tree == "portfast trunk" -%}
+spanning-tree portfast trunk
+{% endif -%}
+
+{% if int.allowed_vlans is defined and int.allowed_vlans|length -%}
+switchport trunk allowed vlan {{ int.allowed_vlans }}
+{% endif -%}
+
+{% if int.access_vlan is defined and int.access_vlan|length -%}
+switchport access vlan {{ int.access_vlan }}
+{% endif -%}
+
+{% if int.mode == "access" -%}
+switchport mode access
+{% endif -%}
+
+{% if int.spanning_tree == "portfast" -%}
+spanning-tree portfast
+{% endif -%}
+
+
+no shutdown
+
+{% endfor %}
+"""
         output = Template(j2template)
         rendered = (output.render(interfaces=interfaces))            # left interfaces var in j2 file,
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
@@ -625,7 +666,7 @@ vlan {{ vlan.id }}
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
             
-        for device in raw["routers"]:
+        for device in raw["devices"]:
             print ("----", device["name"],"----")
 
             to_deploy = []
