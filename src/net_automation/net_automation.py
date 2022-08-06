@@ -3,6 +3,10 @@ from netmiko import Netmiko, ConnectHandler
 import datetime
 import os
 import yaml
+import pySMTP
+import re
+import matplotlib.pyplot as plt
+from discord_webhook import DiscordWebhook
 
 class Main():
 
@@ -71,6 +75,9 @@ class Main():
 
     def get_data(self):
         return self.data
+    
+    def get_hostname(self):
+        return self.host
 
     def write_file(self, contents, fileName):
         # gets the device type, hostname from self class, and time from get time method 
@@ -107,6 +114,66 @@ class Main():
 
     def get_route_table(self, modifier):
         return (self.SSHConnection.send_command(f"show ip route {modifier}"))
+
+    # MATPLOTLIB METHODS
+
+    # gets ping data to a host, from a router and returns a plot-able array 
+    def get_ping_data(self, target, requests):
+        x = []
+        y = []
+        for i in range (0, requests):
+            raw = (self.run_ping(target, 1))
+
+            # regex to specific find the ping data (target, packet loss, min, avg, max, std_dev) and put into groups
+            results = re.findall(r"^PING\b[^(]*\(([^)]*)\)\s([^.]*)\..*?^(\d+\sbytes).*?icmp_seq=(\d+).*?ttl=(\d+).*?time=(.*?ms).*?(\d+)\spackets\stransmitted.*?(\d+)\sreceived.*?(\d+%)\spacket\sloss.*?time\s(\d+ms).*?=\s([^\/]*)\/([^\/]*)\/([^\/]*)\/(.*?)\sms", raw, re.MULTILINE|re.DOTALL)
+            print ("Ping :", results[0][11], "ms")
+            x.append (int(i))
+            y.append (float(results[0][11]))
+
+        title = ("Ping to {} ({}) on {}".format(results[0][0],target,(self.host)))
+        xlabel = "ICMP Packets Transmitted"
+        ylabel = "Ping Time (ms)"
+        
+        return x, y
+
+    def gen_ping_graph(ping_data):
+
+
+        plt.plot (ping_data[0],   # x axis
+                    ping_data[1], # y axis
+                    marker='o', color='red', label='Ping')
+        plt.xlabel(ping_data[2])
+        plt.ylabel(ping_data[3])
+        plt.title(ping_data[4])
+        return plt.show()
+
+class Email():
+    def __init__(self, sender_email, sender_password):
+        self.sender_email=self.verify_email(sender_email)
+        self.sender_password=sender_password
+
+    def verify_email(self, email):
+        regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        if re.fullmatch (regex, email):
+            return email
+        else:
+            raise ValueError("Incorrect Email Formatting, tested via Regex")
+    
+    def send(self, receiver_email, email_subject, email_body):
+        self.receiver_email=self.verify_email(receiver_email)
+        self.email_subject=email_subject
+        self.email_body=email_body
+        pySMTP.send_email(
+            self.sender_email, self.sender_password, self.receiver_email, self.email_subject, self.email_body)
+
+class Webhook():
+    def __init__(self, webhook_url):
+        self.webhook_url = webhook_url
+
+    def send(self, content):
+
+        webhook = DiscordWebhook(url=self.webhook_url, content=content, username="NET",  rate_limit_retry=True)
+        webhook.execute()
 
 class Vyos(Main):  # Vyos/EdgeOS specific commands
 
@@ -145,11 +212,13 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         return (self.SSHConnection.send_command("show ip bgp summary"))
 
     def get_interfaces(self):
-        return (self.SSHConnection.send_command("show interfaces"))
+        return (self.SSHConnection.send_command("show interfaces", use_textfsm=True))
     
     def get_changed(self):
         return (self.SSHConnection.send_command("compare"))
 
+    def run_ping(self, target, count):
+        return (self.SSHConnection.send_command(f"ping {target} count {count}"))
 
     # enable interface (delete disable)
     def delete_disable_interface(self, interface_type, interface_name):
@@ -158,6 +227,56 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     
     def compare(self):
         return self.SSHConnection.send_command("compare")
+
+    # def get_ping_data(self, target, count):
+    #     final = []
+
+    #     raw = self.run_ping(target, count) # runs ping command, with a count of 10 packets
+
+    #     # uses regex to specific find the ping data
+    #     result = re.findall(r"^PING\b[^(]*\(([^)]*)\)\s([^.]*)\..*?^(\d+\sbytes).*?icmp_seq=(\d+).*?ttl=(\d+).*?time=(.*?ms).*?(\d+)\spackets\stransmitted.*?(\d+)\sreceived.*?(\d+%)\spacket\sloss.*?time\s(\d+ms).*?=\s([^\/]*)\/([^\/]*)\/([^\/]*)\/(.*?)\sms", raw, re.MULTILINE|re.DOTALL)
+
+    #     print (result)
+
+    #     final.extend([
+    #         result[0][0],             # target
+    #         float(result[0][8][:-1]), # packet loss
+    #         float(result[0][10]),     # min
+    #         float(result[0][11]),     # avg
+    #         float(result[0][12]),     # max
+    #         float(result[0][13]),     # std_dev
+    #         self.host,                # hostname
+    #     ])
+
+    #     # final.extend( [[(result[0][0]), float(result[0][11])]] )
+
+    #     return (final) # returns the final array of ping times and destination, as floats
+
+
+    def get_ping_graph(self, target, requests, export):
+        x = []
+        y = []
+        for i in range (0, requests):
+            raw = (self.run_ping(target, 1))
+            results = re.findall(r"^PING\b[^(]*\(([^)]*)\)\s([^.]*)\..*?^(\d+\sbytes).*?icmp_seq=(\d+).*?ttl=(\d+).*?time=(.*?ms).*?(\d+)\spackets\stransmitted.*?(\d+)\sreceived.*?(\d+%)\spacket\sloss.*?time\s(\d+ms).*?=\s([^\/]*)\/([^\/]*)\/([^\/]*)\/(.*?)\sms", raw, re.MULTILINE|re.DOTALL)
+            print ("Ping :", results[0][11], "ms")
+            x.append (int(i))
+            y.append (float(results[0][11]))
+            
+            plt.plot (x, y, marker='o', color='red', label='Ping')
+            plt.xticks(x)
+            title = ("Ping to {} ({}) on {}".format(results[0][0],target,(self.host)))
+            plt.title (title)
+            plt.ylabel('Response time (ms)')
+            plt.xlabel('ICMP packets transmitted')
+
+        if export == "show":
+            plt.show()
+
+        if export == "save":
+            plt.savefig(f"{self.host}-{target}-ping.png")
+            plt.close()
+            print ("Saved Graph")
 
     ### start of config generation methods
 
@@ -425,8 +544,8 @@ set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.
             to_deploy = []
 
             hostname = device.get("name")               
-            if hostname != None:                                 # if key exists in yaml file
-                to_deploy.append (Vyos.gen_hostname(hostname))         # get generated config and append to array "to.deploy"
+            if hostname != None:                                                   # if key exists in yaml file
+                to_deploy.append (Vyos.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
 
             interfaces = device.get("interfaces")
             if interfaces != None:
@@ -520,6 +639,13 @@ class EdgeOS(Main):  # Vyos/EdgeOS specific commands
     def __init__(self, host, username, password , use_keys, key_file, secret):
         super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
+
+    def get_interfaces(self):
+        return (self.SSHConnection.send_command("show interfaces ethernet", use_textfsm=True))
+
+    def run_ping(self, target, count):
+        return (self.SSHConnection.send_command(f"sudo ping -c {count} {target}"))
+    
 
 class Cisco_IOS(Main):  # cisco specific commands
 
