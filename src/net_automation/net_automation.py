@@ -176,6 +176,9 @@ class Webhook():
         webhook.execute()
 
 class Vyos(Main):  # Vyos/EdgeOS specific commands
+    """
+    Functions specific to VyOS
+    """
 
     # inherits all methods and attributes from the MAIN class
     def __init__(self, host, username, password , use_keys, key_file, secret):
@@ -212,8 +215,26 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         return (self.SSHConnection.send_command("show ip bgp summary"))
 
     def get_interfaces(self):
+        """Gets all interfaces on the device, including type, name, status, and description"""
         return (self.SSHConnection.send_command("show interfaces", use_textfsm=True))
     
+    def get_interface_detail(self, type, interface):
+        """Gets Linux style details of the specified interface, including addreses, RX, TX, etc."""
+
+        if self.validate_interface_parms(type, interface):
+            return (self.SSHConnection.send_command("show interfaces {} {}".format(type, interface)))
+
+    def validate_interface_parms(self, type: str, interface: str) -> str:
+        valid_types = [   # all valid interface types
+            "ethernet", "loopback", "wireguard", "bonding", "bridge", "dummy","ethernet","input","l2tpv3",
+            "loopback","openvpn","pseudo-ethert" ,"tunnel","vti","vxlan","wireguard","wireless","wirelessmodem"]
+
+        while type not in valid_types:                                  # if the input is not in the list
+            raise ValueError("""ValueError: Invalid Interface Type;
+            Must be Ethernet,  """)                                  # return value error
+        self.validate_is_string(interface)                           # validate that the interface is a string
+        return True                                                  # if no value errors, return the inputs
+
     def get_changed(self):
         return (self.SSHConnection.send_command("compare"))
 
