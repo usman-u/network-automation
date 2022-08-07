@@ -718,6 +718,14 @@ set service lldp legacy-protocols {{ protocol }}
             if dhservers != None:
                 to_deploy.append(Vyos.gen_dhcp(dhservers))
 
+            print("----------------------------")
+            print("TO DEPLOY")
+            print("----------------------------")
+            for i in to_deploy:  # loops through command arrays
+                for j in i:
+                    print (j)    # and prints them
+            print("----------------------------")
+
             router = Vyos(
                 device["SSH_conf"]["hostname"],
                 device["SSH_conf"]["username"],
@@ -726,6 +734,7 @@ set service lldp legacy-protocols {{ protocol }}
                 device["SSH_conf"]["key_location"],
                 device["SSH_conf"]["secret"],
             )
+
             Vyos.init_ssh(router)               # starts the SSH connection
             Vyos.config_mode(router)            # enters Vyos config mode
             for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
@@ -1005,3 +1014,63 @@ no cdp run
 
                 for command in to_deploy:                       # for every code block generated (every dimension in arr)
                     print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
+
+
+    def deploy_yaml_now(ymlfile):
+
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+            
+        for device in raw["devices"]:
+            print ("----", device["name"],"----")
+
+            to_deploy = []
+
+            hostname = device.get("name")               
+            if hostname != None:                                 # if key exists in yaml file
+                to_deploy.append (Cisco_IOS.gen_hostname(hostname))         # generate command and append to array
+
+            interfaces = device.get("interfaces")
+            if interfaces != None:
+                to_deploy.append (Cisco_IOS.gen_int(interfaces))
+
+            bgpasn = device.get("bgpasn")
+            bgp_peers = device.get("bgp_peers")
+
+            if bgpasn != None and bgp_peers != None:
+                to_deploy.append (Cisco_IOS.gen_bgp_peer(bgp_peers, bgpasn))
+            
+            bgp_prefixes = device.get("bgp_prefixes")
+            if bgp_prefixes != None:
+                to_deploy.append (Cisco_IOS.gen_bgp_prefixes(bgp_prefixes))
+
+            ospf_networks = device.get("ospf_networks")
+            if ospf_networks != None:
+                to_deploy.append (Cisco_IOS.gen_ospf_networks(ospf_networks))
+
+            vlans = device.get("vlans")
+            if vlans != None:
+                to_deploy.append (Cisco_IOS.gen_vlan(vlans))
+
+            print("----------------------------")
+            print("TO DEPLOY")
+            print("----------------------------")
+            for i in to_deploy:  # loops through command arrays
+                for j in i:
+                    print (j)    # and prints them
+            print("----------------------------")
+
+            router1 = Cisco_IOS(
+                device["SSH_conf"]["hostname"],
+                device["SSH_conf"]["username"],
+                device["SSH_conf"]["password"],
+                device["SSH_conf"]["use_keys"],
+                device["SSH_conf"]["key_location"],
+                device["SSH_conf"]["secret"],
+            )
+            Cisco_IOS.init_ssh(router1)               # starts the SSH connection
+
+            running_conf = Cisco_IOS.get_all_config(router1)
+
+            for command in to_deploy:                       # for every code block generated (every dimension in arr)
+                print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
