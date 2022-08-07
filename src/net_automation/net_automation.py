@@ -666,7 +666,76 @@ set service lldp legacy-protocols {{ protocol }}
                 else:
                     print ("Config not saved to disk")
 
+    def deploy_yaml_now(ymlfile):
 
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+            
+        for device in raw["routers"]:
+            print ("----", device["name"],"----")
+
+            to_deploy = []
+
+            hostname = device.get("name")               
+            if hostname != None:                                                   # if key exists in yaml file
+                to_deploy.append (Vyos.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
+
+            interfaces = device.get("interfaces")
+            if interfaces != None:
+                to_deploy.append (Vyos.gen_int(interfaces))
+
+            bgpasn = device.get("bgpasn")
+            bgp_peers = device.get("bgp_peers")
+
+            if bgpasn != None and bgp_peers != None:
+                to_deploy.append (Vyos.gen_bgp_peer(bgp_peers, bgpasn))
+            
+            bgp_prefixes = device.get("bgp_prefixes")
+            if bgp_prefixes != None:
+                to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes, bgpasn))
+
+            route_maps = device.get("route_maps")
+            if route_maps != None:
+                to_deploy.append (Vyos.gen_route_map(route_maps))
+
+            prefix_lists = device.get("prefix_lists")
+            if prefix_lists != None:
+                to_deploy.append (Vyos.gen_prefix_list(prefix_lists))
+
+            ospf_networks = device.get("ospf_networks")
+            if ospf_networks != None:
+                to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
+            
+            firewalls = device.get("firewalls")
+            if firewalls != None:
+                to_deploy.append(Vyos.gen_firewalls(firewalls))
+
+            static_routes = device.get("static")
+            if static_routes != None:
+                to_deploy.append(Vyos.gen_static(static_routes))
+
+            dhservers = device.get("dhcp")
+            if dhservers != None:
+                to_deploy.append(Vyos.gen_dhcp(dhservers))
+
+            router = Vyos(
+                device["SSH_conf"]["hostname"],
+                device["SSH_conf"]["username"],
+                device["SSH_conf"]["password"],
+                device["SSH_conf"]["use_keys"],
+                device["SSH_conf"]["key_location"],
+                device["SSH_conf"]["secret"],
+            )
+            Vyos.init_ssh(router)               # starts the SSH connection
+            Vyos.config_mode(router)            # enters Vyos config mode
+            for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
+                Vyos.bulk_commands(router, i)   # send commands over SSH
+
+            print (Vyos.get_changed(router))
+
+            Vyos.commit(router)                           # default input is discard      
+
+            Vyos.save_config(router)
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
 

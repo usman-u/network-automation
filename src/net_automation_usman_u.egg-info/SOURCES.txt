@@ -4,6 +4,9 @@ pyproject.toml
 setup.cfg
 src/net_automation/__init__.py
 src/net_automation/net_automation.py
+src/net_automation/test.py
+src/net_automation/testing.py
+src/net_automation/wh.py
 src/net_automation_usman_u.egg-info/PKG-INFO
 src/net_automation_usman_u.egg-info/SOURCES.txt
 src/net_automation_usman_u.egg-info/dependency_links.txt
