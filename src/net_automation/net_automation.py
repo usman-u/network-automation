@@ -69,7 +69,7 @@ class Main():
         array = []                              # creates new array
         for line in jinja_output.splitlines():  # at every line in the split string
             array.append(line)                  # append line to the array
-        return (array)                          # return array
+        return (list(filter(None, array)))      # uses filter to strip out empty strings from the array 
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
 
@@ -393,7 +393,6 @@ set protocols bgp {{ localAS }} address-family {{ prefix.address_family }} netwo
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
-
     def gen_route_map(route_maps):
         j2template = """
 {%- for map in route_maps -%}
@@ -554,6 +553,21 @@ set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.
         rendered = (output.render(dhservers=dhcp))                    # renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
     
+    def set_lldp(self, interfaces, legacy_protocols) -> str:
+        j2template = """{% if interfaces is defined and interfaces|length %}
+{% for interface in interfaces -%}
+set service lldp interface {{ interface }}
+{% endfor -%}{% endif -%}
+{% if legacy_protocols is defined and legacy_protocols|length -%}
+{% for protocol in legacy_protocols -%}
+set service lldp legacy-protocols {{ protocol }}
+{% endfor -%}{% endif -%}"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(interfaces=interfaces,
+                                  legacy_protocols=legacy_protocols)) 
+
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
     def deploy_yaml(ymlfile):
 
         with open(ymlfile) as file: # opens the yaml file
@@ -661,11 +675,47 @@ class EdgeOS(Main):  # Vyos/EdgeOS specific commands
         super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
 
+    def bulk_commands(self, commands):
+        self.SSHConnection.config_mode()
+        return (self.SSHConnection.send_config_set(commands))
+
     def get_interfaces(self):
         return (self.SSHConnection.send_command("show interfaces ethernet", use_textfsm=True))
 
     def run_ping(self, target, count):
         return (self.SSHConnection.send_command(f"sudo ping -c {count} {target}"))
+
+    def get_changed(self):
+        return (self.SSHConnection.send_command("compare"))
+
+    def save_config(self):
+        return self.SSHConnection.send_command("save")
+
+    def config_mode(self):
+        self.SSHConnection.config_mode()
+
+    def discard_changes(self):
+        return (self.SSHConnection.send_command("discard"))
+
+    def commit(self):
+        self.SSHConnection.commit()
+        return ("Committed")
+
+    def set_lldp(self, interfaces, legacy_protocols) -> str:
+        j2template = """{% if interfaces is defined and interfaces|length %}
+{% for interface in interfaces -%}
+set service lldp interface {{ interface }}
+{% endfor -%}{% endif -%}
+{% if legacy_protocols is defined and legacy_protocols|length -%}
+{% for protocol in legacy_protocols -%}
+set service lldp legacy-protocols {{ protocol }}
+{% endfor -%}{% endif -%}"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(interfaces=interfaces,
+                                  legacy_protocols=legacy_protocols)) 
+
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
     
 
 class Cisco_IOS(Main):  # cisco specific commands
@@ -806,6 +856,18 @@ no shutdown
         
         output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+    def set_lldp(self, run:bool) -> list:
+        j2template = """
+{% if run == true %}
+cdp run
+{% elif run == false %}
+no cdp run
+{% endif %}"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(run=run)) 
+
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def deploy_yaml(ymlfile):
