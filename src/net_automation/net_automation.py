@@ -308,33 +308,56 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_int(conf):
+        """
+        :param state: disabled, disables interface
+                    : deleted,  deletes interface    
+        """
         j2template ="""{% for int in interfaces -%}
-{% if int.state == "absent" -%} 
+{% if int.state == "disabled" -%} 
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled
-{% else %}
+
+{% elif int.state == "deleted" -%}
+delete interfaces {{ int.type }} {{ int.name }}
+
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} {% endif -%}
+
 {% if int.desc and int.desc|length %}
 set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+
 {% endif -%}
-{%if int.firewall %}{%for fw in int.firewall -%}
+
+{% if int.firewall -%}
+{% for fw in int.firewall -%}
+
 set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+
 {% endfor -%}
 {% endif -%}
+
 {%if int.type == "wireguard" -%}
 {% if int.port is defined and int.port|length -%}
+
 set interfaces {{ int.type }} {{ int.name }} port {{ int.port }}
 {% endif -%}
+
 {% for peer in int.wg_peers -%}
+
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
+
 {% if peer.endpoint is defined and peer.endpoint|length -%}
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} endpoint '{{ peer.endpoint }}'
 {% endif -%}
+
 {% if peer.keepalive is defined and peer.keepalive|length -%}
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'
 {% endif -%}
+
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ peer.pubkey }}'
+
 {% endfor -%}
+
 {% endif -%}
+
 {% endfor -%}
 """
         output = Template(j2template)                                # associates jinja hostname template with output
