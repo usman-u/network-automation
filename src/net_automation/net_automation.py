@@ -310,7 +310,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def gen_int(conf):
         """
         :param state: disabled, disables interface
-                    : deleted,  deletes interface    
+                    : deleted,  deletes interface
+                    : else,     interface remains
         """
         j2template ="""{% for int in interfaces -%}
 {% if int.state == "disabled" -%} 
@@ -364,15 +365,30 @@ set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ pee
         rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
         return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
-    def gen_ospf_networks(networks):                      
-        j2template = """{% for net in networks %}{% if net.state == "absent" -%}
+    def gen_ospf(ospf):
+        j2template = """
+
+{% if ospf["ospf_parameters"]["use_routerid"] == True and ospf["ospf_parameters"]["routerid"] is defined and ospf["ospf_parameters"]["routerid"]| length %}
+set protocols ospf area 0 parameters router-id {{ ospf["ospf_parameters"]["routerid"] }}
+{% endif %}
+
+{% if ospf["ospf_parameters"]["use_routerid"] == False %}
+delete protocols ospf area 0 parameters router-id
+{% endif %}
+
+{% for net in ospf["ospf_networks"] -%}
+
+{% if net.state == "absent" -%}
 delete protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
+
 {% else -%}
 set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }} 
-{% endif -%}{% endfor -%}"""                                   
 
+{% endif -%}
+
+{% endfor -%}"""                                   
         output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
+        rendered = (output.render(ospf=ospf))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
     def gen_bgp_peer(peers, localAS):
@@ -627,9 +643,9 @@ set service lldp legacy-protocols {{ protocol }}
             if prefix_lists != None:
                 to_deploy.append (Vyos.gen_prefix_list(prefix_lists))
 
-            ospf_networks = device.get("ospf_networks")
-            if ospf_networks != None:
-                to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
+            ospf = device.get("ospf")
+            if ospf != None:
+                to_deploy.append (Vyos.gen_ospf(ospf))
             
             firewalls = device.get("firewalls")
             if firewalls != None:
@@ -725,9 +741,9 @@ set service lldp legacy-protocols {{ protocol }}
             if prefix_lists != None:
                 to_deploy.append (Vyos.gen_prefix_list(prefix_lists))
 
-            ospf_networks = device.get("ospf_networks")
-            if ospf_networks != None:
-                to_deploy.append (Vyos.gen_ospf_networks(ospf_networks))
+            ospf = device.get("ospf")
+            if ospf != None:
+                to_deploy.append (Vyos.gen_ospf(ospf))
             
             firewalls = device.get("firewalls")
             if firewalls != None:
