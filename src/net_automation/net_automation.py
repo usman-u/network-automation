@@ -793,16 +793,21 @@ set service lldp legacy-protocols {{ protocol }}
 
             Vyos.init_ssh(router)               # starts the SSH connection
             Vyos.config_mode(router)            # enters Vyos config mode
+
             print ("----------------------------")
-            print ("Set Command Logs")
-            print ("----------------------------")
+            print ("Sending Commands, please wait")
             for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
-                print (Vyos.bulk_commands(router, i))   # send commands over SSH
+                Vyos.bulk_commands(router, i)   # send commands over SSH
             print ("----------------------------")
-
+            print ("Commands Sent")
+            print ("----------------------------")
+            print ("Diff/Changes:")
+            print ("----------------------------")
             print (Vyos.get_changed(router))       # sends "compare" command
-
-            # Vyos.commit(router)                           # default input is discard      
+            print ("----------------------------")
+            print ("Committing Changes")
+            Vyos.commit(router)
+            print ("Changes Committed, Success")
 
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
@@ -1131,5 +1136,11 @@ no cdp run
 
             running_conf = Cisco_IOS.get_all_config(router1)
 
+            print ("----------------------------")
+            print ("Sending Commands, please wait")
+            print ("----------------------------")
             for command in to_deploy:                       # for every code block generated (every dimension in arr)
                 print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
+            print ("----------------------------")
+            print ("Commands Sent, success")
+            print ("----------------------------")
