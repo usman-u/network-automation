@@ -315,29 +315,26 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         """
         j2template ="""{% for int in interfaces -%}
 {% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} disabled
+set interfaces {{ int.type }} {{ int.name }} disabled
 
 {% elif int.state == "deleted" -%}
 delete interfaces {{ int.type }} {{ int.name }}
 
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }} {% endif -%}
+{% else %}
+set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
 
 {% if int.desc and int.desc|length %}
 set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
-
 {% endif -%}
 
 {% if int.firewall -%}
 {% for fw in int.firewall -%}
-
 set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
-
 {% endfor -%}
 {% endif -%}
 
 {%if int.type == "wireguard" -%}
 {% if int.port is defined and int.port|length -%}
-
 set interfaces {{ int.type }} {{ int.name }} port {{ int.port }}
 {% endif -%}
 
@@ -356,6 +353,8 @@ set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-kee
 set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ peer.pubkey }}'
 
 {% endfor -%}
+
+{% endif -%}
 
 {% endif -%}
 
@@ -794,14 +793,17 @@ set service lldp legacy-protocols {{ protocol }}
 
             Vyos.init_ssh(router)               # starts the SSH connection
             Vyos.config_mode(router)            # enters Vyos config mode
+            print ("----------------------------")
+            print ("Set Command Logs")
+            print ("----------------------------")
             for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
-                Vyos.bulk_commands(router, i)   # send commands over SSH
+                print (Vyos.bulk_commands(router, i))   # send commands over SSH
+            print ("----------------------------")
 
-            print (Vyos.get_changed(router))
+            print (Vyos.get_changed(router))       # sends "compare" command
 
-            Vyos.commit(router)                           # default input is discard      
+            # Vyos.commit(router)                           # default input is discard      
 
-            Vyos.save_config(router)
 
 class EdgeOS(Main):  # Vyos/EdgeOS specific commands
 
