@@ -367,9 +367,27 @@ set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ pee
 
     def gen_ospf(ospf):
         j2template = """
+{% if ospf["ospf_redistribute"] is defined %}
+
+{% for redis in ospf["ospf_redistribute"] %}
+
+{% if redis.state == "present" %}
+set protocols ospf redistribute {{ redis.redistribute }}
+
+{% if redis.route_map is defined and redis.route_map|length > 1 %}
+set protocols ospf redistribute {{ redis.redistribute }} route-map {{ redis.route_map }}
+{% endif %}
+
+{% elif redis.state == "absent"%}
+delete protocol ospf redistribute {{ redis.redistribute }}
+{% endif %}
+
+{% endfor %}
+
+{% endif %}
 
 {% if ospf["ospf_parameters"]["use_routerid"] == True and ospf["ospf_parameters"]["routerid"] is defined and ospf["ospf_parameters"]["routerid"]| length %}
-set protocols ospf area 0 parameters router-id {{ ospf["ospf_parameters"]["routerid"] }}
+set protocols ospf parameters router-id {{ ospf["ospf_parameters"]["routerid"] }}
 {% endif %}
 
 {% if ospf["ospf_parameters"]["use_routerid"] == False %}
