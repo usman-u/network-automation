@@ -7,6 +7,7 @@ import pySMTP
 import re
 import matplotlib.pyplot as plt
 from discord_webhook import DiscordWebhook
+from difflib import Differ
 
 class Main():
 
@@ -70,6 +71,20 @@ class Main():
         for line in jinja_output.splitlines():  # at every line in the split string
             array.append(line)                  # append line to the array
         return (list(filter(None, array)))      # uses filter to strip out empty strings from the array 
+
+    def _unidiff_output(expected, actual):
+        """
+        Helper function. Returns a string containing the unified diff of two multiline strings.
+        """
+
+        import difflib
+        expected=expected.splitlines(1)
+        actual=actual.splitlines(1)
+
+        diff=difflib.unified_diff(expected, actual)
+
+        return ''.join(diff)
+
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
 
@@ -796,6 +811,7 @@ set service lldp legacy-protocols {{ protocol }}
 
             print ("----------------------------")
             print ("Sending Commands, please wait")
+            print ("----------------------------")
             for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
                 Vyos.bulk_commands(router, i)   # send commands over SSH
             print ("----------------------------")
@@ -1116,13 +1132,6 @@ no cdp run
             if vlans != None:
                 to_deploy.append (Cisco_IOS.gen_vlan(vlans))
 
-            print("----------------------------")
-            print("TO DEPLOY")
-            print("----------------------------")
-            for i in to_deploy:  # loops through command arrays
-                for j in i:
-                    print (j)    # and prints them
-            print("----------------------------")
 
             router1 = Cisco_IOS(
                 device["SSH_conf"]["hostname"],
@@ -1134,13 +1143,16 @@ no cdp run
             )
             Cisco_IOS.init_ssh(router1)               # starts the SSH connection
 
-            running_conf = Cisco_IOS.get_all_config(router1)
+            running_conf_before = Cisco_IOS.get_all_config(router1)
 
             print ("----------------------------")
             print ("Sending Commands, please wait")
-            print ("----------------------------")
             for command in to_deploy:                       # for every code block generated (every dimension in arr)
-                print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
+                Cisco_IOS.bulk_commands(router1, command)   # send commands over SSH
             print ("----------------------------")
             print ("Commands Sent, success")
+            print ("----------------------------")
+            print ("Diff/Changes:")
+            running_conf_after = Cisco_IOS.get_all_config(router1)
+            print (Main._unidiff_output(running_conf_before, running_conf_after))
             print ("----------------------------")
