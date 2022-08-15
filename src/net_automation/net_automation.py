@@ -196,8 +196,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     """
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, host, username, password , use_keys, key_file, secret):
-        super().__init__("vyos", host, username, password, use_keys, key_file, secret)
+    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
+        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def single_command(self, command):
@@ -910,27 +910,27 @@ set interfaces {{ int.type }} {{ int.name }} listen-port {{ int.port }}
 
 {% for peer in int.wg_peers -%}
 
-set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} allowed-ips '{{ peer.allowedips }}'
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} allowed-ips '{{ peer.allowedips }}'
 
 {% if peer.endpoint is defined and peer.endpoint|length -%}
-set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} endpoint '{{ peer.endpoint }}'
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} endpoint '{{ peer.endpoint }}'
 {% endif -%}
 
 {% if peer.name is defined and peer.name|length -%}
-set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} name '{{ peer.name }}'
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} description '{{ peer.name }}'
 {% endif %}
 
 {% if peer.keepalive is defined and peer.keepalive|length -%}
-set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} persistent-keepalive '{{ peer.keepalive }}'
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} persistent-keepalive '{{ peer.keepalive }}'
 {% endif -%}
 
 {% endfor -%}
 
-{% if int.private_key is defined and int.private_key|length -%}
-set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_locatio }}'
+{% if int.private_key_path is defined and int.private_key_path|length -%}
+set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_path }}'
 {% endif %}
 
-{% if int.route_allowed-ips is defined and int.route_allowed-ips|length -%}
+{% if int.route_allowed_ips is defined and int.route_allowed_ips|length -%}
 set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed-ips }}'
 {% endif %}
 
@@ -944,6 +944,94 @@ set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_all
         rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
         return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
+
+    def deploy_yaml_now(ymlfile):
+
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+            
+        for device in raw["routers"]:
+            print ("----", device["name"],"----")
+
+            to_deploy = []
+
+            hostname = device.get("name")               
+            if hostname != None:                                                   # if key exists in yaml file
+                to_deploy.append (EdgeOS.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
+
+            interfaces = device.get("interfaces")
+            if interfaces != None:
+                to_deploy.append (EdgeOS.gen_int(interfaces))
+
+            bgpasn = device.get("bgpasn")
+            bgp_peers = device.get("bgp_peers")
+
+            if bgpasn != None and bgp_peers != None:
+                to_deploy.append (EdgeOS.gen_bgp_peer(bgp_peers, bgpasn))
+            
+            bgp_prefixes = device.get("bgp_prefixes")
+            if bgp_prefixes != None:
+                to_deploy.append (EdgeOS.gen_bgp_prefixes(bgp_prefixes, bgpasn))
+
+            route_maps = device.get("route_maps")
+            if route_maps != None:
+                to_deploy.append (EdgeOS.gen_route_map(route_maps))
+
+            prefix_lists = device.get("prefix_lists")
+            if prefix_lists != None:
+                to_deploy.append (EdgeOS.gen_prefix_list(prefix_lists))
+
+            ospf = device.get("ospf")
+            if ospf != None:
+                to_deploy.append (EdgeOS.gen_ospf(ospf))
+            
+            firewalls = device.get("firewalls")
+            if firewalls != None:
+                to_deploy.append(EdgeOS.gen_firewalls(firewalls))
+
+            static_routes = device.get("static")
+            if static_routes != None:
+                to_deploy.append(EdgeOS.gen_static(static_routes))
+
+            dhservers = device.get("dhcp")
+            if dhservers != None:
+                to_deploy.append(EdgeOS.gen_dhcp(dhservers))
+
+            print("----------------------------")
+            print("TO DEPLOY")
+            print("----------------------------")
+            for i in to_deploy:  # loops through command arrays
+                for j in i:
+                    print (j)    # and prints them
+            print("----------------------------")
+
+            router = EdgeOS(
+                device["SSH_conf"]["hostname"],
+                device["SSH_conf"]["username"],
+                device["SSH_conf"]["password"],
+                device["SSH_conf"]["use_keys"],
+                device["SSH_conf"]["key_location"],
+                device["SSH_conf"]["secret"]
+            )
+
+            EdgeOS.init_ssh(router)               # starts the SSH connection
+            EdgeOS.config_mode(router)            # enters Vyos config mode
+
+            print ("----------------------------")
+            print ("Sending Commands, please wait")
+            print ("----------------------------")
+            for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
+                EdgeOS.bulk_commands(router, i)   # send commands over SSH
+            print ("----------------------------")
+            print ("Commands Sent")
+            print ("----------------------------")
+            print ("Diff/Changes:")
+            print ("----------------------------")
+            print (EdgeOS.get_changed(router))       # sends "compare" command
+            print ("----------------------------")
+            print ("Committing Changes")
+            EdgeOS.commit(router)
+            print ("Changes Committed, Success")
 
 class Cisco_IOS(Main):  # cisco specific commands
 
