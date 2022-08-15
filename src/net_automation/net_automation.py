@@ -826,7 +826,7 @@ set service lldp legacy-protocols {{ protocol }}
             print ("Changes Committed, Success")
 
 
-class EdgeOS(Main):  # Vyos/EdgeOS specific commands
+class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
     def __init__(self, host, username, password , use_keys, key_file, secret):
@@ -859,6 +859,8 @@ class EdgeOS(Main):  # Vyos/EdgeOS specific commands
         self.SSHConnection.commit()
         return ("Committed")
 
+    # GEN METHODS
+
     def set_lldp(self, interfaces, legacy_protocols) -> str:
         j2template = """{% if interfaces is defined and interfaces|length %}
 {% for interface in interfaces -%}
@@ -874,7 +876,74 @@ set service lldp legacy-protocols {{ protocol }}
 
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
-    
+    def gen_int(conf):
+        """
+        :param state: disabled, disables interface
+                    : deleted,  deletes interface
+                    : else,     interface remains
+        """
+
+        j2template ="""{% for int in interfaces -%}
+{% if int.state == "disabled" -%} 
+set interfaces {{ int.type }} {{ int.name }} disabled
+
+{% elif int.state == "deleted" -%}
+delete interfaces {{ int.type }} {{ int.name }}
+
+{% else %}
+set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
+
+{% if int.desc and int.desc|length %}
+set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+{% endif -%}
+
+{% if int.firewall -%}
+{% for fw in int.firewall -%}
+set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+
+{%if int.type == "wireguard" -%}
+{% if int.port is defined and int.port|length -%}
+set interfaces {{ int.type }} {{ int.name }} listen-port {{ int.port }}
+{% endif -%}
+
+{% for peer in int.wg_peers -%}
+
+set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} allowed-ips '{{ peer.allowedips }}'
+
+{% if peer.endpoint is defined and peer.endpoint|length -%}
+set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} endpoint '{{ peer.endpoint }}'
+{% endif -%}
+
+{% if peer.name is defined and peer.name|length -%}
+set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} name '{{ peer.name }}'
+{% endif %}
+
+{% if peer.keepalive is defined and peer.keepalive|length -%}
+set interfaces {{ int.type }} {{ int.name }} {{ peer.pubkey }} persistent-keepalive '{{ peer.keepalive }}'
+{% endif -%}
+
+{% endfor -%}
+
+{% if int.private_key is defined and int.private_key|length -%}
+set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_locatio }}'
+{% endif %}
+
+{% if int.route_allowed-ips is defined and int.route_allowed-ips|length -%}
+set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed-ips }}'
+{% endif %}
+
+{% endif -%}
+
+{% endif -%}
+
+{% endfor -%}
+"""
+        output = Template(j2template)                                # associates jinja hostname template with output
+        rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
+        return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
 
 class Cisco_IOS(Main):  # cisco specific commands
 
@@ -1095,20 +1164,25 @@ no cdp run
                 for command in to_deploy:                       # for every code block generated (every dimension in arr)
                     print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
 
+    def lint_yaml(ymlfile):
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+
+            print(raw)
 
     def deploy_yaml_now(ymlfile):
 
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
-            
+
         for device in raw["devices"]:
             print ("----", device["name"],"----")
 
             to_deploy = []
 
             hostname = device.get("name")               
-            if hostname != None:                                 # if key exists in yaml file
-                to_deploy.append (Cisco_IOS.gen_hostname(hostname))         # generate command and append to array
+            if hostname != None:                                                # if key exists in yaml file
+                to_deploy.append (Cisco_IOS.gen_hostname(hostname))             # generate command and append to array
 
             interfaces = device.get("interfaces")
             if interfaces != None:
@@ -1131,7 +1205,6 @@ no cdp run
             vlans = device.get("vlans")
             if vlans != None:
                 to_deploy.append (Cisco_IOS.gen_vlan(vlans))
-
 
             router1 = Cisco_IOS(
                 device["SSH_conf"]["hostname"],
