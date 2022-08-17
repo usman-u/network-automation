@@ -903,6 +903,24 @@ set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{
 {% endfor -%}
 {% endif -%}
 
+{% if int.vifs is defined and int.vifs|length -%}
+{% for vif in int.vifs -%}
+
+{% if vif.state == "disabled" -%}
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disabled
+{% endif -%}
+
+{% if vif.state == "deleted" -%}
+delete interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }}
+{% endif -%}
+
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} address {{ vif.ip }}{{ vif.mask }}
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} description '{{ vif.desc }}'
+
+{% endfor %}
+
+{% endif -%}
+
 {%if int.type == "wireguard" -%}
 {% if int.port is defined and int.port|length -%}
 set interfaces {{ int.type }} {{ int.name }} listen-port {{ int.port }}
@@ -931,7 +949,7 @@ set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_pat
 {% endif %}
 
 {% if int.route_allowed_ips is defined and int.route_allowed_ips|length -%}
-set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed-ips }}'
+set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed_ips }}'
 {% endif %}
 
 {% endif -%}
