@@ -7,6 +7,7 @@ import pySMTP
 import re
 import matplotlib.pyplot as plt
 from discord_webhook import DiscordWebhook
+from difflib import Differ
 
 class Main():
 
@@ -70,6 +71,20 @@ class Main():
         for line in jinja_output.splitlines():  # at every line in the split string
             array.append(line)                  # append line to the array
         return (list(filter(None, array)))      # uses filter to strip out empty strings from the array 
+
+    def _unidiff_output(expected, actual):
+        """
+        Helper function. Returns a string containing the unified diff of two multiline strings.
+        """
+
+        import difflib
+        expected=expected.splitlines(1)
+        actual=actual.splitlines(1)
+
+        diff=difflib.unified_diff(expected, actual)
+
+        return ''.join(diff)
+
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
 
@@ -181,8 +196,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     """
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, host, username, password , use_keys, key_file, secret):
-        super().__init__("vyos", host, username, password, use_keys, key_file, secret)
+    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
+        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def single_command(self, command):
@@ -796,6 +811,7 @@ set service lldp legacy-protocols {{ protocol }}
 
             print ("----------------------------")
             print ("Sending Commands, please wait")
+            print ("----------------------------")
             for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
                 Vyos.bulk_commands(router, i)   # send commands over SSH
             print ("----------------------------")
@@ -810,7 +826,7 @@ set service lldp legacy-protocols {{ protocol }}
             print ("Changes Committed, Success")
 
 
-class EdgeOS(Main):  # Vyos/EdgeOS specific commands
+class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
     def __init__(self, host, username, password , use_keys, key_file, secret):
@@ -843,6 +859,8 @@ class EdgeOS(Main):  # Vyos/EdgeOS specific commands
         self.SSHConnection.commit()
         return ("Committed")
 
+    # GEN METHODS
+
     def set_lldp(self, interfaces, legacy_protocols) -> str:
         j2template = """{% if interfaces is defined and interfaces|length %}
 {% for interface in interfaces -%}
@@ -858,7 +876,180 @@ set service lldp legacy-protocols {{ protocol }}
 
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
-    
+    def gen_int(conf):
+        """
+        :param state: disabled, disables interface
+                    : deleted,  deletes interface
+                    : else,     interface remains
+        """
+
+        j2template ="""{% for int in interfaces -%}
+{% if int.state == "disabled" -%} 
+set interfaces {{ int.type }} {{ int.name }} disabled
+
+{% elif int.state == "deleted" -%}
+delete interfaces {{ int.type }} {{ int.name }}
+
+{% else %}
+set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
+
+{% if int.desc and int.desc|length %}
+set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+{% endif -%}
+
+{% if int.firewall -%}
+{% for fw in int.firewall -%}
+set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+
+{% if int.vifs is defined and int.vifs|length -%}
+{% for vif in int.vifs -%}
+
+{% if vif.state == "disabled" -%}
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disabled
+{% endif -%}
+
+{% if vif.state == "deleted" -%}
+delete interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }}
+{% endif -%}
+
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} address {{ vif.ip }}{{ vif.mask }}
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} description '{{ vif.desc }}'
+
+{% endfor %}
+
+{% endif -%}
+
+{%if int.type == "wireguard" -%}
+{% if int.port is defined and int.port|length -%}
+set interfaces {{ int.type }} {{ int.name }} listen-port {{ int.port }}
+{% endif -%}
+
+{% for peer in int.wg_peers -%}
+
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} allowed-ips '{{ peer.allowedips }}'
+
+{% if peer.endpoint is defined and peer.endpoint|length -%}
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} endpoint '{{ peer.endpoint }}'
+{% endif -%}
+
+{% if peer.name is defined and peer.name|length -%}
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} description '{{ peer.name }}'
+{% endif %}
+
+{% if peer.keepalive is defined and peer.keepalive|length -%}
+set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} persistent-keepalive '{{ peer.keepalive }}'
+{% endif -%}
+
+{% endfor -%}
+
+{% if int.private_key_path is defined and int.private_key_path|length -%}
+set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_path }}'
+{% endif %}
+
+{% if int.route_allowed_ips is defined and int.route_allowed_ips|length -%}
+set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed_ips }}'
+{% endif %}
+
+{% endif -%}
+
+{% endif -%}
+
+{% endfor -%}
+"""
+        output = Template(j2template)                                # associates jinja hostname template with output
+        rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
+        return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
+
+    def deploy_yaml_now(ymlfile):
+
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+            
+        for device in raw["routers"]:
+            print ("----", device["name"],"----")
+
+            to_deploy = []
+
+            hostname = device.get("name")               
+            if hostname != None:                                                   # if key exists in yaml file
+                to_deploy.append (EdgeOS.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
+
+            interfaces = device.get("interfaces")
+            if interfaces != None:
+                to_deploy.append (EdgeOS.gen_int(interfaces))
+
+            bgpasn = device.get("bgpasn")
+            bgp_peers = device.get("bgp_peers")
+
+            if bgpasn != None and bgp_peers != None:
+                to_deploy.append (EdgeOS.gen_bgp_peer(bgp_peers, bgpasn))
+            
+            bgp_prefixes = device.get("bgp_prefixes")
+            if bgp_prefixes != None:
+                to_deploy.append (EdgeOS.gen_bgp_prefixes(bgp_prefixes, bgpasn))
+
+            route_maps = device.get("route_maps")
+            if route_maps != None:
+                to_deploy.append (EdgeOS.gen_route_map(route_maps))
+
+            prefix_lists = device.get("prefix_lists")
+            if prefix_lists != None:
+                to_deploy.append (EdgeOS.gen_prefix_list(prefix_lists))
+
+            ospf = device.get("ospf")
+            if ospf != None:
+                to_deploy.append (EdgeOS.gen_ospf(ospf))
+            
+            firewalls = device.get("firewalls")
+            if firewalls != None:
+                to_deploy.append(EdgeOS.gen_firewalls(firewalls))
+
+            static_routes = device.get("static")
+            if static_routes != None:
+                to_deploy.append(EdgeOS.gen_static(static_routes))
+
+            dhservers = device.get("dhcp")
+            if dhservers != None:
+                to_deploy.append(EdgeOS.gen_dhcp(dhservers))
+
+            print("----------------------------")
+            print("TO DEPLOY")
+            print("----------------------------")
+            for i in to_deploy:  # loops through command arrays
+                for j in i:
+                    print (j)    # and prints them
+            print("----------------------------")
+
+            router = EdgeOS(
+                device["SSH_conf"]["hostname"],
+                device["SSH_conf"]["username"],
+                device["SSH_conf"]["password"],
+                device["SSH_conf"]["use_keys"],
+                device["SSH_conf"]["key_location"],
+                device["SSH_conf"]["secret"]
+            )
+
+            EdgeOS.init_ssh(router)               # starts the SSH connection
+            EdgeOS.config_mode(router)            # enters Vyos config mode
+
+            print ("----------------------------")
+            print ("Sending Commands, please wait")
+            print ("----------------------------")
+            for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
+                EdgeOS.bulk_commands(router, i)   # send commands over SSH
+            print ("----------------------------")
+            print ("Commands Sent")
+            print ("----------------------------")
+            print ("Diff/Changes:")
+            print ("----------------------------")
+            print (EdgeOS.get_changed(router))       # sends "compare" command
+            print ("----------------------------")
+            print ("Committing Changes")
+            EdgeOS.commit(router)
+            print ("Changes Committed, Success")
 
 class Cisco_IOS(Main):  # cisco specific commands
 
@@ -1079,20 +1270,25 @@ no cdp run
                 for command in to_deploy:                       # for every code block generated (every dimension in arr)
                     print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
 
+    def lint_yaml(ymlfile):
+        with open(ymlfile) as file: # opens the yaml file
+            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
+
+            print(raw)
 
     def deploy_yaml_now(ymlfile):
 
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
-            
+
         for device in raw["devices"]:
             print ("----", device["name"],"----")
 
             to_deploy = []
 
             hostname = device.get("name")               
-            if hostname != None:                                 # if key exists in yaml file
-                to_deploy.append (Cisco_IOS.gen_hostname(hostname))         # generate command and append to array
+            if hostname != None:                                                # if key exists in yaml file
+                to_deploy.append (Cisco_IOS.gen_hostname(hostname))             # generate command and append to array
 
             interfaces = device.get("interfaces")
             if interfaces != None:
@@ -1116,14 +1312,6 @@ no cdp run
             if vlans != None:
                 to_deploy.append (Cisco_IOS.gen_vlan(vlans))
 
-            print("----------------------------")
-            print("TO DEPLOY")
-            print("----------------------------")
-            for i in to_deploy:  # loops through command arrays
-                for j in i:
-                    print (j)    # and prints them
-            print("----------------------------")
-
             router1 = Cisco_IOS(
                 device["SSH_conf"]["hostname"],
                 device["SSH_conf"]["username"],
@@ -1134,13 +1322,16 @@ no cdp run
             )
             Cisco_IOS.init_ssh(router1)               # starts the SSH connection
 
-            running_conf = Cisco_IOS.get_all_config(router1)
+            running_conf_before = Cisco_IOS.get_all_config(router1)
 
             print ("----------------------------")
             print ("Sending Commands, please wait")
-            print ("----------------------------")
             for command in to_deploy:                       # for every code block generated (every dimension in arr)
-                print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
+                Cisco_IOS.bulk_commands(router1, command)   # send commands over SSH
             print ("----------------------------")
             print ("Commands Sent, success")
+            print ("----------------------------")
+            print ("Diff/Changes:")
+            running_conf_after = Cisco_IOS.get_all_config(router1)
+            print (Main._unidiff_output(running_conf_before, running_conf_after))
             print ("----------------------------")
