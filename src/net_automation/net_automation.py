@@ -798,12 +798,14 @@ set service lldp legacy-protocols {{ protocol }}
             print("----------------------------")
 
             router = Vyos(
+                "vyos",
                 device["SSH_conf"]["hostname"],
                 device["SSH_conf"]["username"],
                 device["SSH_conf"]["password"],
                 device["SSH_conf"]["use_keys"],
                 device["SSH_conf"]["key_location"],
                 device["SSH_conf"]["secret"],
+                
             )
 
             Vyos.init_ssh(router)               # starts the SSH connection
