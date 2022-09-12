@@ -3,6 +3,7 @@ README.md
 pyproject.toml
 setup.cfg
 src/net_automation/__init__.py
+src/net_automation/erxtest.py
 src/net_automation/net_automation.py
 src/net_automation/test.py
 src/net_automation/testing.py

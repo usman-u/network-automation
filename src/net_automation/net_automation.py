@@ -26,7 +26,7 @@ class Main():
         # second if using username password auth
 
         if self.use_keys == True:
-            self.data = {
+            self.SSH_data = {
                 'device_type': self.device_type,
                 'host':   self.host,
                 'username': self.username,
@@ -36,7 +36,7 @@ class Main():
             }
         
         elif self.use_keys == False:
-            self.data = {
+            self.SSH_data = {
                 'device_type': self.device_type,
                 'host':   self.host,
                 'username': self.username,
@@ -46,9 +46,9 @@ class Main():
 
     def init_ssh(self):
         # connects to the device via ssh
-        print("Connecting to", self.host, "via SSH")
-        self.SSHConnection = ConnectHandler(**self.data)
-        print("Connected to", self.host, "via SSH")
+        print ("Connecting to", self.host)
+        self.SSHConnection = ConnectHandler(**self.SSH_data)
+        print ("Connected to", self.host)
     
 
     def validate_is_string(self, inp):
@@ -196,8 +196,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     """
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, key_file, secret):
-        super().__init__(device_type, host, username, password, use_keys, key_file, secret)
+    def __init__(self, device_type, host, username, password , use_keys, key_file):
+        super().__init__(device_type, host, username, password, use_keys, key_file, "")
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def single_command(self, command):
@@ -649,107 +649,12 @@ set service lldp legacy-protocols {{ protocol }}
 
             to_deploy = []
 
-            hostname = device.get("name")               
-            if hostname != None:                                                   # if key exists in yaml file
-                to_deploy.append (Vyos.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
-
-            interfaces = device.get("interfaces")
-            if interfaces != None:
-                to_deploy.append (Vyos.gen_int(interfaces))
-
-            bgpasn = device.get("bgpasn")
-            bgp_peers = device.get("bgp_peers")
-
-            if bgpasn != None and bgp_peers != None:
-                to_deploy.append (Vyos.gen_bgp_peer(bgp_peers, bgpasn))
-            
-            bgp_prefixes = device.get("bgp_prefixes")
-            if bgp_prefixes != None:
-                to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes, bgpasn))
-
-            route_maps = device.get("route_maps")
-            if route_maps != None:
-                to_deploy.append (Vyos.gen_route_map(route_maps))
-
-            prefix_lists = device.get("prefix_lists")
-            if prefix_lists != None:
-                to_deploy.append (Vyos.gen_prefix_list(prefix_lists))
-
-            ospf = device.get("ospf")
-            if ospf != None:
-                to_deploy.append (Vyos.gen_ospf(ospf))
-            
-            firewalls = device.get("firewalls")
-            if firewalls != None:
-                to_deploy.append(Vyos.gen_firewalls(firewalls))
-
-            static_routes = device.get("static")
-            if static_routes != None:
-                to_deploy.append(Vyos.gen_static(static_routes))
-
-            dhservers = device.get("dhcp")
-            if dhservers != None:
-                to_deploy.append(Vyos.gen_dhcp(dhservers))
-
-            see_commands = input("Do you want to see the individual commands? Y/N [Y]")
-            if see_commands == "N" or  see_commands == "n":  # default is yes
-                pass
-            
-            else:                    # shows commands
-                for i in to_deploy:  # loops through command arrays
-                    for j in i:
-                        print (j)    # and prints them
-
-            deploy = input("Start Deployment? Y/N [Y]")
-
-            if deploy == "N" or deploy == "n": # default is yes
-                pass
-
-            else:   # calls Vyos method from OOP, with config from yml file as parms.
-                router = Vyos(
-                    device["SSH_conf"]["hostname"],
-                    device["SSH_conf"]["username"],
-                    device["SSH_conf"]["password"],
-                    device["SSH_conf"]["use_keys"],
-                    device["SSH_conf"]["key_location"],
-                    device["SSH_conf"]["secret"],
-                )
-                Vyos.init_ssh(router)               # starts the SSH connection
-                Vyos.config_mode(router)            # enters Vyos config mode
-                for i in to_deploy:                 # for every code block generated (every 1st dimension in arr)
-                    Vyos.bulk_commands(router, i)   # send commands over SSH
-
-                verify_commit = input("Do you want to check the command conflicts before comitting? Y//N [Y]") 
-                if verify_commit == "N":                                 # asks to check conflicts
-                    Vyos.commit(router)                                  # only commits if input is "Y"
-                else:                                                    # default input is discard      
-                    print (Vyos.get_changed(router))
-
-                commit = input("Do you want to commit Y/N [N]")   # asks to commit
-                if commit == "Y":                                 # only commits if input is "Y"
-                    Vyos.commit(router)                           # default input is discard      
-                else:
-                    Vyos.discard_changes(router)
-
-                save = input("Do you want to save the configuration to disk? Y/N [N]")
-                if save == "Y" or save == "y":
-                    print (Vyos.save_config(router))
-                else:
-                    print ("Config not saved to disk")
-
-    def deploy_yaml_now(ymlfile):
-
-        with open(ymlfile) as file: # opens the yaml file
-            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
-            
-        for device in raw["routers"]:
-            print ("----", device["name"],"----")
-
-            to_deploy = []
+            # if key exists in yaml file
+            # get generated config and append to array "to.deploy"
 
             hostname = device.get("name")               
-            if hostname != None:                                                   # if key exists in yaml file
-                to_deploy.append (Vyos.gen_hostname(hostname))                     # get generated config and append to array "to.deploy"
+            if hostname != None:                                                   
+                to_deploy.append (Vyos.gen_hostname(hostname))                     
 
             interfaces = device.get("interfaces")
             if interfaces != None:
@@ -804,7 +709,6 @@ set service lldp legacy-protocols {{ protocol }}
                 device["SSH_conf"]["password"],
                 device["SSH_conf"]["use_keys"],
                 device["SSH_conf"]["key_location"],
-                device["SSH_conf"]["secret"],
                 
             )
 
@@ -831,9 +735,9 @@ set service lldp legacy-protocols {{ protocol }}
 class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, host, username, password , use_keys, key_file, secret):
-        super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file, secret)
-        # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
+    def __init__(self, host, username, password , use_keys, key_file):
+        super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file)
+        # calls the __init__ method from the  superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
         self.SSHConnection.config_mode()
@@ -965,7 +869,7 @@ set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_all
         return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
 
-    def deploy_yaml_now(ymlfile):
+    def deploy_yaml(ymlfile):
 
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
@@ -1031,7 +935,6 @@ set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_all
                 device["SSH_conf"]["password"],
                 device["SSH_conf"]["use_keys"],
                 device["SSH_conf"]["key_location"],
-                device["SSH_conf"]["secret"]
             )
 
             EdgeOS.init_ssh(router)               # starts the SSH connection
@@ -1205,80 +1108,13 @@ no cdp run
 
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
-    def deploy_yaml(ymlfile):
-
-        with open(ymlfile) as file: # opens the yaml file
-            raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
-            
-        for device in raw["devices"]:
-            print ("----", device["name"],"----")
-
-            to_deploy = []
-
-            hostname = device.get("name")               
-            if hostname != None:                                 # if key exists in yaml file
-                to_deploy.append (Cisco_IOS.gen_hostname(hostname))         # generate command and append to array
-
-            interfaces = device.get("interfaces")
-            if interfaces != None:
-                to_deploy.append (Cisco_IOS.gen_int(interfaces))
-
-            bgpasn = device.get("bgpasn")
-            bgp_peers = device.get("bgp_peers")
-
-            if bgpasn != None and bgp_peers != None:
-                to_deploy.append (Cisco_IOS.gen_bgp_peer(bgp_peers, bgpasn))
-            
-            bgp_prefixes = device.get("bgp_prefixes")
-            if bgp_prefixes != None:
-                to_deploy.append (Cisco_IOS.gen_bgp_prefixes(bgp_prefixes))
-
-            ospf_networks = device.get("ospf_networks")
-            if ospf_networks != None:
-                to_deploy.append (Cisco_IOS.gen_ospf_networks(ospf_networks))
-
-            vlans = device.get("vlans")
-            if vlans != None:
-                to_deploy.append (Cisco_IOS.gen_vlan(vlans))
-
-
-            see_commands = input("Do you want to see the individual commands? Y/N [Y]")
-            if see_commands == "N":  # default is no, due to verbosity of commands
-                pass
-            else:
-                # print (to_deploy)
-                for i in to_deploy:  # loops through command arrays
-                    for j in i:
-                        print (j)    # and prints them
-
-
-            deploy = input("Start Deployment? Y/N [Y]")
-
-            if deploy == "N":   # calls Vyos method from OOP, with config from yml file as parms.
-                pass
-            else:
-                router1 = Cisco_IOS(
-                    device["SSH_conf"]["hostname"],
-                    device["SSH_conf"]["username"],
-                    device["SSH_conf"]["password"],
-                    device["SSH_conf"]["use_keys"],
-                    device["SSH_conf"]["key_location"],
-                    device["SSH_conf"]["secret"],
-                )
-                Cisco_IOS.init_ssh(router1)               # starts the SSH connection
-
-                running_conf = Cisco_IOS.get_all_config(router1)
-
-                for command in to_deploy:                       # for every code block generated (every dimension in arr)
-                    print (Cisco_IOS.bulk_commands(router1, command))   # send commands over SSH
-
     def lint_yaml(ymlfile):
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
 
             print(raw)
 
-    def deploy_yaml_now(ymlfile):
+    def deploy_yaml(ymlfile):
 
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
