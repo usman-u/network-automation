@@ -19,7 +19,7 @@ class Main():
         self.__password = password
         self.use_keys = self.validate_use_keys(use_keys)
         self.key_file = key_file
-        self.secret = self.validate_is_string(secret)
+        self.secret = secret
 
         # netmiko DICTIONARY for network device parameters
         # uses first if statement if the user has a ssh private key file
@@ -57,8 +57,8 @@ class Main():
         return inp  # returns inp if the input is valid (string)
 
     def validate_use_keys(self, inp):
-        if type(inp) != bool:
-            raise ValueError ("Enter Boolean Value: True or False for use_keys")
+        # if type(inp) != bool:
+        #     raise ValueError ("Enter Boolean Value: True or False for use_keys")
         return inp  # returns inp if the input is valid (boolean)
     
     def validate_device_type(self, inp):
@@ -226,6 +226,12 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_config_commands(self):
         return (self.SSHConnection.send_command('show configuration commands'))
     
+    def get_ospf_route_all(self):
+        return (self.SSHConnection.send_command('show ip ospf route'))
+    
+    def get_ospf_neighbours(self):
+        return (self.SSHConnection.send_command("show ip ospf neighbor"))
+
     def get_bgp_neighbors(self):
         return (self.SSHConnection.send_command("show ip bgp summary"))
 
@@ -735,8 +741,8 @@ set service lldp legacy-protocols {{ protocol }}
 class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, host, username, password , use_keys, key_file):
-        super().__init__("ubiquiti_edgerouter", host, username, password, use_keys, key_file)
+    def __init__(self, device_type, host, username, password , use_keys, key_file):
+        super().__init__(device_type, host, username, password, use_keys, key_file)
         # calls the __init__ method from the  superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
