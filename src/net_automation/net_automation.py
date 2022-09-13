@@ -335,13 +335,16 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                     : else,     interface remains
         """
         j2template ="""{% for int in interfaces -%}
-{% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disabled
 
-{% elif int.state == "deleted" -%}
+{% if int.state == "absent" -%}
 delete interfaces {{ int.type }} {{ int.name }}
 
 {% else %}
+
+{% if int.state == "disabled" -%} 
+set interfaces {{ int.type }} {{ int.name }} disabled
+{%endif-%}
+
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
 
 {% if int.desc and int.desc|length %}
@@ -434,6 +437,9 @@ set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 {%if peer.state == "absent" -%}
 delete protocols bgp {{ localAS }} neighbor {{ peer.ip }}
 {% else -%}
+{%if peer.state == "disabled"-%}
+set protocols bgp {{ localAS }} neighbor {{ peer.ip }} shutdown
+{%endif-%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
 {%if peer.desc is defined and peer.desc|length -%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} description {{ peer.desc }}
@@ -796,13 +802,16 @@ set service lldp legacy-protocols {{ protocol }}
         """
 
         j2template ="""{% for int in interfaces -%}
-{% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disabled
 
-{% elif int.state == "deleted" -%}
+{% if int.state == "absent" -%}
 delete interfaces {{ int.type }} {{ int.name }}
 
 {% else %}
+
+{% if int.state == "disabled" -%} 
+
+set interfaces {{ int.type }} {{ int.name }} disabled
+{% endif -%}
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
 
 {% if int.desc and int.desc|length %}
@@ -822,7 +831,7 @@ set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{
 set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disabled
 {% endif -%}
 
-{% if vif.state == "deleted" -%}
+{% if vif.state == "absent" -%}
 delete interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }}
 {% endif -%}
 
