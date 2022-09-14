@@ -12,37 +12,25 @@ from difflib import Differ
 class Main():
 
     # attributes are standard for netmiko functionality
-    def __init__(self, device_type, host, username, password, use_keys, key_file, secret):
-        self.device_type = device_type
-        self.host = host
-        self.username = self.validate_is_string(username)
-        self.__password = password
-        self.use_keys = self.validate_use_keys(use_keys)
-        self.key_file = key_file
-        self.secret = secret
+    def __init__(self, **kwargs):
 
-        # netmiko DICTIONARY for network device parameters
-        # uses first if statement if the user has a ssh private key file
-        # second if using username password auth
+        # gets ssh data from kwargs object
+        self.device_type = kwargs.get("device_type")
+        self.host = kwargs.get("host")
+        self.username = self.validate_is_string(kwargs.get("username"))
+        self.__password = kwargs.get("password")
+        self.use_keys = self.validate_use_keys(kwargs.get("use_keys"))
+        self.key_file = kwargs.get("key_file")
+        self.secret = kwargs.get("secret")
 
-        if self.use_keys == True:
-            self.SSH_data = {
-                'device_type': self.device_type,
-                'host':   self.host,
-                'username': self.username,
-                'password': self.__password,
-                'key_file': self.key_file,
-                'secret': self.secret,
-            }
-        
-        elif self.use_keys == False:
-            self.SSH_data = {
-                'device_type': self.device_type,
-                'host':   self.host,
-                'username': self.username,
-                'password': self.__password,
-                'secret': self.secret,
-            }
+        self.SSH_data = {
+            'device_type': self.device_type,
+            'host':   self.host,
+            'username': self.username,
+            'password': self.__password,
+            'key_file': self.key_file,
+            'secret': self.secret,
+        }
 
     def init_ssh(self):
         # connects to the device via ssh
@@ -196,8 +184,8 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     """
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, key_file):
-        super().__init__(device_type, host, username, password, use_keys, key_file, "")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
     
     def single_command(self, command):
@@ -229,7 +217,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_ospf_route_all(self):
         return (self.SSHConnection.send_command('show ip ospf route'))
     
-    def get_ospf_neighbours(self):
+    def get_ospf_neighbors(self):
         return (self.SSHConnection.send_command("show ip ospf neighbor"))
 
     def get_bgp_neighbors(self):
@@ -342,7 +330,11 @@ delete interfaces {{ int.type }} {{ int.name }}
 {% else %}
 
 {% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disabled
+set interfaces {{ int.type }} {{ int.name }} disable
+{%endif-%}
+
+{% if int.state == "present" -%} 
+delete interfaces {{ int.type }} {{ int.name }} disable
 {%endif-%}
 
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
@@ -440,6 +432,11 @@ delete protocols bgp {{ localAS }} neighbor {{ peer.ip }}
 {%if peer.state == "disabled"-%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} shutdown
 {%endif-%}
+
+{% if peer.state == "present" -%}
+delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} disable
+{% endif -%}
+
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
 {%if peer.desc is defined and peer.desc|length -%}
 set protocols bgp {{ localAS }} neighbor {{ peer.ip }} description {{ peer.desc }}
@@ -715,12 +712,12 @@ set service lldp legacy-protocols {{ protocol }}
             print("----------------------------")
 
             router = Vyos(
-                "vyos",
-                device["SSH_conf"]["hostname"],
-                device["SSH_conf"]["username"],
-                device["SSH_conf"]["password"],
-                device["SSH_conf"]["use_keys"],
-                device["SSH_conf"]["key_location"],
+                device_type = "vyos",
+                host = device["SSH_conf"]["hostname"],
+                username = device["SSH_conf"]["username"],
+                password = device["SSH_conf"]["password"],
+                use_keys = device["SSH_conf"]["use_keys"],
+                key_file = device["SSH_conf"]["key_location"],
                 
             )
 
@@ -747,8 +744,8 @@ set service lldp legacy-protocols {{ protocol }}
 class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
     # inherits all methods and attributes from the MAIN class
-    def __init__(self, device_type, host, username, password , use_keys, key_file):
-        super().__init__(device_type, host, username, password, use_keys, key_file)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # calls the __init__ method from the  superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
@@ -810,7 +807,7 @@ delete interfaces {{ int.type }} {{ int.name }}
 
 {% if int.state == "disabled" -%} 
 
-set interfaces {{ int.type }} {{ int.name }} disabled
+set interfaces {{ int.type }} {{ int.name }} disable
 {% endif -%}
 set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
 
@@ -828,7 +825,7 @@ set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{
 {% for vif in int.vifs -%}
 
 {% if vif.state == "disabled" -%}
-set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disabled
+set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disable
 {% endif -%}
 
 {% if vif.state == "absent" -%}
@@ -945,11 +942,12 @@ set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_all
             print("----------------------------")
 
             router = EdgeOS(
-                device["SSH_conf"]["hostname"],
-                device["SSH_conf"]["username"],
-                device["SSH_conf"]["password"],
-                device["SSH_conf"]["use_keys"],
-                device["SSH_conf"]["key_location"],
+                device_type = "ubiquiti_edgerouter",
+                host = device["SSH_conf"]["hostname"],
+                username = device["SSH_conf"]["username"],
+                password = device["SSH_conf"]["password"],
+                use_keys = device["SSH_conf"]["use_keys"],
+                key_file = device["SSH_conf"]["key_location"],
             )
 
             EdgeOS.init_ssh(router)               # starts the SSH connection
@@ -975,8 +973,8 @@ class Cisco_IOS(Main):  # cisco specific commands
 
     # inherits all methods and attributes from MAIN class
     # sends 'cisco_ios' as an argument, so user doesn't have to specify device_type
-    def __init__(self, host, username, password , use_keys, key_file, secret):
-        super().__init__("cisco_ios", host, username, password, use_keys, key_file, secret)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # calls the __init__ function from the MAIN superclass, creating the netmiko SSH tunnel
 
     def bulk_commands(self, commands):
