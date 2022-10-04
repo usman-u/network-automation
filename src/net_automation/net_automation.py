@@ -1164,12 +1164,12 @@ no cdp run
                 to_deploy.append (Cisco_IOS.gen_vlan(vlans))
 
             router1 = Cisco_IOS(
-                device["SSH_conf"]["hostname"],
-                device["SSH_conf"]["username"],
-                device["SSH_conf"]["password"],
-                device["SSH_conf"]["use_keys"],
-                device["SSH_conf"]["key_location"],
-                device["SSH_conf"]["secret"],
+                host = device["SSH_conf"]["hostname"],
+                username = device["SSH_conf"]["username"],
+                password = device["SSH_conf"]["password"],
+                use_keys = device["SSH_conf"]["use_keys"],
+                key_file = device["SSH_conf"]["key_location"],
+                secret = device["SSH_conf"]["secret"],
             )
             Cisco_IOS.init_ssh(router1)               # starts the SSH connection
 
