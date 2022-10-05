@@ -2,3 +2,6 @@
 .idea/
 __pycache__/
 misc/
+dist/
+src/net_automation.egg-info/
+src/net_automation_usman_u.egg-info/

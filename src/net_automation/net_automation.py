@@ -8,6 +8,8 @@ import re
 import matplotlib.pyplot as plt
 from discord_webhook import DiscordWebhook
 from difflib import Differ
+import requests
+import textfsm
 
 class Main():
 
@@ -38,7 +40,6 @@ class Main():
         self.SSHConnection = ConnectHandler(**self.SSH_data)
         print ("Connected to", self.host)
     
-
     def validate_is_string(self, inp):
         if type(inp) != str:
             raise ValueError ("Input is Not String. Check device parameters")
@@ -187,7 +188,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # calls the __init__ method from the MAIN superclass, creating the netmiko SSH tunnel
-    
+
     def single_command(self, command):
         return (self.SSHConnection.send_command(command))
 
@@ -204,6 +205,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def commit(self):
         self.SSHConnection.commit()
         return ("Committed")
+    
+    def whois_dn42(self, query):
+        return self.SSHConnection.send_command("whois -h whois.dn42 {}" .format(query))
 
     def save_config(self):
         return self.SSHConnection.send_command("save")
@@ -220,8 +224,14 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     def get_ospf_neighbors(self):
         return (self.SSHConnection.send_command("show ip ospf neighbor"))
 
-    def get_bgp_neighbors(self):
-        return (self.SSHConnection.send_command("show ip bgp summary"))
+    def get_bgp_summary(self):
+        raw = (self.SSHConnection.send_command("show ip bgp summary"))
+
+        with open('vyosbgp.template') as template:
+            fsm = textfsm.TextFSM(template)
+            result = fsm.ParseText(raw)
+        
+        return result
 
     def get_interfaces(self):
         """Gets all interfaces on the device, including type, name, status, and description"""
@@ -1164,6 +1174,7 @@ no cdp run
                 to_deploy.append (Cisco_IOS.gen_vlan(vlans))
 
             router1 = Cisco_IOS(
+                device_type = "cisco_ios",
                 host = device["SSH_conf"]["hostname"],
                 username = device["SSH_conf"]["username"],
                 password = device["SSH_conf"]["password"],
