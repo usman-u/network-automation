@@ -598,6 +598,43 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name
         rendered = (output.render(firewalls=firewalls))               # renders template, with paramater 'prefixes', and stores output in 'rendered' var
         return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
 
+    def gen_zones(zones):
+        j2template = """
+{% for zone in zones -%}
+
+{% if zone.state == "deleted" -%}
+delete zone-policy zone "{{ zone.name }}"
+{% else -%}
+
+{% if zone.state == "replaced" -%}
+delete zone-policy zone "{{ zone.name }}"
+{% endif -%}
+
+set zone-policy zone "{{ zone.name }}"
+set zone-policy zone "{{ zone.name }}" default-action "{{ zone.default_action }}"
+
+{% if zone.desc is defined and zone.desc | length -%}
+set zone-policy zone "{{ zone.name }}" description '{{ zone.desc }}"
+{% endif -%}
+
+{% for flow in zone.flows -%}
+set zone-policy zone "{{ zone.name }}" from "{{ flow.from }}" firewall name "{{ flow.firewall }}"
+{% endfor -%}
+
+{% for int in zone.interfaces %}
+set zone-policy zone "{{ zone.name }}" interface "{{ int }}"
+{% endfor -%}
+
+
+{% endif -%}
+
+
+{% endfor -%}
+"""
+        output = Template(j2template)                                 # associates jinja hostname template with output
+        rendered = (output.render(zones=zones))                    # renders template, with paramater 'zones', and stores output in 'rendered' var
+        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+
     def gen_dhcp(dhcp):
         j2template = """{% for dhserver in dhservers -%}
 
@@ -942,6 +979,11 @@ set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_all
             dhservers = device.get("dhcp")
             if dhservers != None:
                 to_deploy.append(EdgeOS.gen_dhcp(dhservers))
+
+
+            zones = device.get("zones")
+            if zones != None:
+                to_deploy.append(EdgeOS.gen_zones(zones))
 
             print("----------------------------")
             print("TO DEPLOY")
