@@ -558,21 +558,42 @@ set protocols static {{ route.type }} {{ route.network }} next-hop {{ route.next
 
 
     def gen_firewalls(firewalls):
-        j2template = """{%for ruleset in firewalls -%}
+        j2template = """
+
+{% for ruleset in firewalls -%}
+
+set firewall name {{ ruleset.name }} 
 set firewall name {{ ruleset.name }} default-action '{{ ruleset.default_action }}'
+
 {% for rule in ruleset.rules -%}
 
 {% if rule.state == "absent" -%}
 delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }}
-{%else -%}
+{% else -%}
+
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} action '{{ rule.action }}'
+
 {% if rule.desc is defined and rule.desc|length -%}
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rule.desc }}' 
 {%endif -%}
 
-{% if rule.dest is defined and rule.dest|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination '{{ rule.dest }}' 
-{%endif -%}
+{% if rule.dest is defined -%}
+
+{% if rule.dest["address"] is defined and rule.dest["address"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ rule.dest["address"] }}"
+{% endif -%}
+
+{% if rule.dest["port"] is defined and rule.dest["port"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ rule.dest["port"] }}"
+{% endif -%}
+
+{% if rule.dest["group"] is defined and rule.dest["group"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ rule.dest["group"] }}
+{% endif -%}
+
+
+{% endif -%}
+
 
 {% if rule.source is defined and rule.source|length -%}
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source '{{ rule.source }}' 
@@ -583,6 +604,7 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.p
 {%endif -%}
 
 {% if rule.states is defined -%}
+
 {% for state in rule.states -%}
 {% if state.status == "absent" -%}
 delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
@@ -590,9 +612,12 @@ delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.n
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
 {% endif -%}
 {% endfor -%}
+
 {% endif -%}
-{%endif -%}
-{%endfor -%}
+{% endif -%}
+
+{% endfor -%}
+
 {%endfor -%}"""
         output = Template(j2template)                                 # associates jinja hostname template with output
         rendered = (output.render(firewalls=firewalls))               # renders template, with paramater 'prefixes', and stores output in 'rendered' var
