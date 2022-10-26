@@ -1,5 +1,6 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
+import j2templates
 import datetime
 import os
 import yaml
@@ -322,9 +323,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
     def gen_hostname(hostname):
         j2template = ("set system host-name {{ hostname }}")
-        output = Template(j2template)                                # associates jinja hostname template with output
-        rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2template)                                
+        rendered = (output.render(hostname=hostname))                
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_int(conf):
         """
@@ -332,393 +333,63 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                     : deleted,  deletes interface
                     : else,     interface remains
         """
-        j2template ="""{% for int in interfaces -%}
 
-{% if int.state == "absent" -%}
-delete interfaces {{ int.type }} {{ int.name }}
-
-{% else %}
-
-{% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disable
-{%endif-%}
-
-{% if int.state == "present" -%} 
-delete interfaces {{ int.type }} {{ int.name }} disable
-{%endif-%}
-
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
-
-{% if int.desc and int.desc|length %}
-set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
-{% endif -%}
-
-{% if int.firewall -%}
-{% for fw in int.firewall -%}
-set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
-{% endfor -%}
-{% endif -%}
-
-{%if int.type == "wireguard" -%}
-{% if int.port is defined and int.port|length -%}
-set interfaces {{ int.type }} {{ int.name }} port {{ int.port }}
-{% endif -%}
-
-{% for peer in int.wg_peers -%}
-
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
-
-{% if peer.endpoint is defined and peer.endpoint|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} endpoint '{{ peer.endpoint }}'
-{% endif -%}
-
-{% if peer.keepalive is defined and peer.keepalive|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'
-{% endif -%}
-
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ peer.pubkey }}'
-
-{% endfor -%}
-
-{% endif -%}
-
-{% endif -%}
-
-{% endfor -%}
-"""
-        output = Template(j2template)                                # associates jinja hostname template with output
-        rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
-        return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_int)                      
+        rendered = (output.render(interfaces=conf))                  
+        return Main.conv_jinja_to_arr(rendered)                      
 
     def gen_ospf(ospf):
-        j2template = """
-{% if ospf["ospf_redistribute"] is defined %}
-
-{% for redis in ospf["ospf_redistribute"] %}
-
-{% if redis.state == "present" %}
-set protocols ospf redistribute {{ redis.redistribute }}
-
-{% if redis.route_map is defined and redis.route_map|length > 1 %}
-set protocols ospf redistribute {{ redis.redistribute }} route-map {{ redis.route_map }}
-{% endif %}
-
-{% elif redis.state == "absent"%}
-delete protocol ospf redistribute {{ redis.redistribute }}
-{% endif %}
-
-{% endfor %}
-
-{% endif %}
-
-{% if ospf["ospf_parameters"]["use_routerid"] == True and ospf["ospf_parameters"]["routerid"] is defined and ospf["ospf_parameters"]["routerid"]| length %}
-set protocols ospf parameters router-id {{ ospf["ospf_parameters"]["routerid"] }}
-{% endif %}
-
-{% if ospf["ospf_parameters"]["use_routerid"] == False %}
-delete protocols ospf area 0 parameters router-id
-{% endif %}
-
-{% for net in ospf["ospf_networks"] -%}
-
-{% if net.state == "absent" -%}
-delete protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
-
-{% else -%}
-set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }} 
-
-{% endif -%}
-
-{% endfor -%}"""                                   
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(ospf=ospf))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_ospf)                     
+        rendered = (output.render(ospf=ospf))
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_bgp_peer(peers, localAS):
-        j2template = """{%for peer in peers -%}
-{%if peer.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }}
-{% else -%}
-{%if peer.state == "disabled"-%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} shutdown
-{%endif-%}
-
-{% if peer.state == "present" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} disable
-{% endif -%}
-
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
-{%if peer.desc is defined and peer.desc|length -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} description {{ peer.desc }}
-{% endif -%}
-{%if peer.ebgp_multihop is defined and peer.ebgp_multihop|length -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} ebgp-multihop {{ peer.ebgp_multihop }}
-{% endif -%}
-{%if peer.route_maps -%}
-{%for rm in peer.route_maps -%}  
-{%if rm.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-{% else -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-{%endif -%}
-{%endfor -%}
-{%endif -%} 
-{%endif -%}
-{% endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(peers=peers, localAS=localAS))      # renders template, with paramaters 'peers' & 'localAS', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_bgp_peer)                 
+        rendered = (output.render(peers=peers, localAS=localAS))     
+        return (Main.conv_jinja_to_arr(rendered))                    
     
     def gen_bgp_prefixes(prefixes, localAS):
-        j2template = """{% for prefix in prefixes -%}
-{% if prefix.state == "absent" -%}
-delete protocols bgp {{ localAS }} address-family {{ prefix.address_family }} network {{ prefix.prefix }}{{ prefix.mask }}
-{% else -%}
-set protocols bgp {{ localAS }} address-family {{ prefix.address_family }} network {{ prefix.prefix }}{{ prefix.mask }}
-{% endif -%}
-{% endfor -%}
-        """
-        output = Template(j2template)                                 # closes bgp prefix template file file
-        rendered = (output.render(prefixes=prefixes, localAS=localAS))# renders template, with paramater 'prefixes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
-
+        output = Template(j2templates.vyos_bgp_prefixes)             
+        rendered = (output.render(prefixes=prefixes, localAS=localAS))
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_route_map(route_maps):
-        j2template = """
-{%- for map in route_maps -%}
-
-{%if map.desc is defined and map.desc|length -%}
-set policy route-map {{ map.name }} description '{{map.desc}}'
-{%endif-%}
-
-{%- for rule in map.rules -%}
-
-{%if rule.state == "absent" -%}
-delete policy route-map {{ map.name }} rule {{ rule.rule_no }}
-
-{% else -%}
-set policy route-map {{ map.name }} rule {{ rule.rule_no }} action {{ rule.action }}
-set policy route-map {{ map.name }} rule {{ rule.rule_no }} match {{ rule.match }}
-{%endif-%}
-{% endfor -%}{% endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(route_maps=route_maps))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_routemap)                 
+        rendered = (output.render(route_maps=route_maps))            
+        return (Main.conv_jinja_to_arr(rendered))                    
 
 
     def gen_prefix_list(prefix_lists):
-        j2template = """
-{%- for list in prefix_lists -%}
-
-{%if list.desc is defined and list.desc|length -%}
-set policy prefix-list {{ list.name }} description '{{ list.desc }}'
-{%endif-%}
-
-{%- for rule in list.rules -%}
-
-{%if rule.state == "absent" -%}
-delete policy prefix-list {{ list.name }} rule {{ rule.rule_no }}
-
-{% else -%}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} action {{ rule.action }}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} {{ rule.match[0]["length"] }}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} prefix {{ rule.match[0]["prefix"] }}
-{%endif-%}
-{% endfor -%}{% endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(prefix_lists=prefix_lists))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
-
-
-
+        output = Template(j2templates.vyos_prefix_list) 
+        rendered = (output.render(prefix_lists=prefix_lists))        
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_static(static_routes):
-        j2template = """{% for route in static -%}
-{% if route.state == "absent" -%}
-delete protocols static {{ route.type }} {{ route.network }}
-{% else -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop-interface {{ route.nexthop }}
-{% if route.distance is defined and route.distance|length -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop-interface {{ route.nexthop }} distance {{ route.distance }}
-{%endif -%}
-{%endif -%}
-
-{% if route.type == "route" -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop {{ route.nexthop }}
-
-{% if route.distance is defined and route.distance|length -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop {{ route.nexthop }} distance {{ route.distance }}
-{%endif -%}
-{%endif -%}
-
-{%endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(static=static_routes))              # renders template, with paramater 'static_routes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_static)                                 
+        rendered = (output.render(static=static_routes))              
+        return (Main.conv_jinja_to_arr(rendered))                     
 
 
     def gen_firewalls(firewalls):
-        j2template = """
-
-{% for ruleset in firewalls -%}
-
-set firewall name {{ ruleset.name }} 
-set firewall name {{ ruleset.name }} default-action '{{ ruleset.default_action }}'
-
-{% for rule in ruleset.rules -%}
-
-{% if rule.state == "absent" -%}
-delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }}
-{% else -%}
-
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} action '{{ rule.action }}'
-
-{% if rule.desc is defined and rule.desc|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rule.desc }}' 
-{%endif -%}
-
-{% if rule.dest is defined -%}
-
-{% if rule.dest["address"] is defined and rule.dest["address"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ rule.dest["address"] }}"
-{% endif -%}
-
-{% if rule.dest["port"] is defined and rule.dest["port"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ rule.dest["port"] }}"
-{% endif -%}
-
-{% if rule.dest["group"] is defined and rule.dest["group"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ rule.dest["group"] }}
-{% endif -%}
-
-
-{% endif -%}
-
-
-{% if rule.source is defined and rule.source|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source '{{ rule.source }}' 
-{%endif -%}
-
-{% if rule.protocol is defined and rule.protocol|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
-{%endif -%}
-
-{% if rule.states is defined -%}
-
-{% for state in rule.states -%}
-{% if state.status == "absent" -%}
-delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
-{% else -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
-{% endif -%}
-{% endfor -%}
-
-{% endif -%}
-{% endif -%}
-
-{% endfor -%}
-
-{%endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(firewalls=firewalls))               # renders template, with paramater 'prefixes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_firewall)               
+        rendered = (output.render(firewalls=firewalls))            
+        return (Main.conv_jinja_to_arr(rendered))                  
 
     def gen_zones(zones):
-        j2template = """
-{% for zone in zones -%}
-
-{% if zone.state == "deleted" -%}
-delete zone-policy zone "{{ zone.name }}"
-{% else -%}
-
-{% if zone.state == "replaced" -%}
-delete zone-policy zone "{{ zone.name }}"
-{% endif -%}
-
-set zone-policy zone "{{ zone.name }}"
-set zone-policy zone "{{ zone.name }}" default-action "{{ zone.default_action }}"
-
-{% if zone.desc is defined and zone.desc | length -%}
-set zone-policy zone "{{ zone.name }}" description '{{ zone.desc }}"
-{% endif -%}
-
-{% for flow in zone.flows -%}
-set zone-policy zone "{{ zone.name }}" from "{{ flow.from }}" firewall name "{{ flow.firewall }}"
-{% endfor -%}
-
-{% for int in zone.interfaces %}
-set zone-policy zone "{{ zone.name }}" interface "{{ int }}"
-{% endfor -%}
-
-
-{% endif -%}
-
-
-{% endfor -%}
-"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(zones=zones))                    # renders template, with paramater 'zones', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_zones)                  
+        rendered = (output.render(zones=zones))                    
+        return (Main.conv_jinja_to_arr(rendered))                  
 
     def gen_dhcp(dhcp):
-        j2template = """{% for dhserver in dhservers -%}
-
-{% if dhserver.subnet is defined and dhserver.subnet|length -%}
-{% if dhserver.default_router is defined and dhserver.default_router|length %}
-set service dhcp-server shared-network-name {{ dhserver.name }} subnet  {{ dhserver.subnet }}
-set service dhcp-server shared-network-name {{dhserver.name}} subnet  {{ dhserver.subnet }} default-router {{ dhserver.default_router }}
-{%endif -%}
-{%endif -%}
-
-{% if dhserver.domain_name is defined and dhserver.domain_name|length -%}
-set service dhcp-server shared-network-name {{ dhserver.name }} domain-name {{ dhserver.doman_name }}
-{% endif -%}
-
-{% if dhserver.name_server is defined and dhserver.name_server|length -%}
-set service dhcp-server shared-network-name {{ dhserver.name }} subnet {{ dhserver.subnet }} name-server {{ dhserver.name_server}}
-{% endif -%}
-
-{% if dhserver.lease_time is defined and dhserver.lease_time|length -%}
-set service dhcp-server shared-network-name {{ dhserver.name }} subnet {{ dhserver.subnet }} lease {{ dhserver.lease_time }}
-{% endif -%}
-
-{% if dhserver.authoritative == "true" -%}
-set service dhcp-server shared-network-name {{ dhserver.name }} authoritative
-{% endif -%}
-
-{% if dhserver.exclude_addrs is defined and dhserver.exclude_addrs -%}
-{% for addr in dhserver.exclude_addrs -%}
-set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} exclude {{ addr.ip }}
-{% endfor -%}
-{% endif -%}
-
-
-{%if dhserver.dhcp_reserv is defined and dhserver.dhcp_reserv -%}
-{%for reserv in dhserver.dhcp_reserv -%}
-set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} static-mapping {{reserv.desc}} mac-address {{ reserv.mac }}
-set service dhcp-server shared-network-name {{dhserver.name}} subnet {{dhserver.subnet}} static-mapping {{reserv.desc}} ip-address {{reserv.ip}}
-{%endfor -%}
-{%endif -%}
-
-{%endfor -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(dhservers=dhcp))                    # renders template, with paramater 'prefixes', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.vyos_dhcp)                   
+        rendered = (output.render(dhservers=dhcp))                 
+        return (Main.conv_jinja_to_arr(rendered))                  
     
     def set_lldp(self, interfaces, legacy_protocols) -> str:
-        j2template = """{% if interfaces is defined and interfaces|length %}
-{% for interface in interfaces -%}
-set service lldp interface {{ interface }}
-{% endfor -%}{% endif -%}
-{% if legacy_protocols is defined and legacy_protocols|length -%}
-{% for protocol in legacy_protocols -%}
-set service lldp legacy-protocols {{ protocol }}
-{% endfor -%}{% endif -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
+        output = Template(j2templates.vyos_lldp)
         rendered = (output.render(interfaces=interfaces,
                                   legacy_protocols=legacy_protocols)) 
-
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        return (Main.conv_jinja_to_arr(rendered))
 
     def deploy_yaml(ymlfile):
 
@@ -849,19 +520,10 @@ class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
     # GEN METHODS
 
     def set_lldp(self, interfaces, legacy_protocols) -> str:
-        j2template = """{% if interfaces is defined and interfaces|length %}
-{% for interface in interfaces -%}
-set service lldp interface {{ interface }}
-{% endfor -%}{% endif -%}
-{% if legacy_protocols is defined and legacy_protocols|length -%}
-{% for protocol in legacy_protocols -%}
-set service lldp legacy-protocols {{ protocol }}
-{% endfor -%}{% endif -%}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
+        output = Template(j2templates.edgeos_lldp)
         rendered = (output.render(interfaces=interfaces,
                                   legacy_protocols=legacy_protocols)) 
-
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        return (Main.conv_jinja_to_arr(rendered))
 
     def gen_int(conf):
         """
@@ -870,88 +532,9 @@ set service lldp legacy-protocols {{ protocol }}
                     : else,     interface remains
         """
 
-        j2template ="""{% for int in interfaces -%}
-
-{% if int.state == "absent" -%}
-delete interfaces {{ int.type }} {{ int.name }}
-
-{% else %}
-
-{% if int.state == "disabled" -%} 
-
-set interfaces {{ int.type }} {{ int.name }} disable
-{% endif -%}
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
-
-{% if int.desc and int.desc|length %}
-set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
-{% endif -%}
-
-{% if int.firewall -%}
-{% for fw in int.firewall -%}
-set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
-{% endfor -%}
-{% endif -%}
-
-{% if int.vifs is defined and int.vifs|length -%}
-{% for vif in int.vifs -%}
-
-{% if vif.state == "disabled" -%}
-set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} disable
-{% endif -%}
-
-{% if vif.state == "absent" -%}
-delete interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }}
-{% endif -%}
-
-set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} address {{ vif.ip }}{{ vif.mask }}
-set interfaces {{ int.type }} {{ int.name }} vif {{ vif.number }} description '{{ vif.desc }}'
-
-{% endfor %}
-
-{% endif -%}
-
-{%if int.type == "wireguard" -%}
-{% if int.port is defined and int.port|length -%}
-set interfaces {{ int.type }} {{ int.name }} listen-port {{ int.port }}
-{% endif -%}
-
-{% for peer in int.wg_peers -%}
-
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} allowed-ips '{{ peer.allowedips }}'
-
-{% if peer.endpoint is defined and peer.endpoint|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} endpoint '{{ peer.endpoint }}'
-{% endif -%}
-
-{% if peer.name is defined and peer.name|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} description '{{ peer.name }}'
-{% endif %}
-
-{% if peer.keepalive is defined and peer.keepalive|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.pubkey }} persistent-keepalive '{{ peer.keepalive }}'
-{% endif -%}
-
-{% endfor -%}
-
-{% if int.private_key_path is defined and int.private_key_path|length -%}
-set interfaces {{ int.type }} {{ int.name }} private-key '{{ int.private_key_path }}'
-{% endif %}
-
-{% if int.route_allowed_ips is defined and int.route_allowed_ips|length -%}
-set interfaces {{ int.type }} {{ int.name }} route-allowed-ips '{{ int.route_allowed_ips }}'
-{% endif %}
-
-{% endif -%}
-
-{% endif -%}
-
-{% endfor -%}
-"""
-        output = Template(j2template)                                # associates jinja hostname template with output
-        rendered = (output.render(interfaces=conf))                  # renders template, with paramater 'conf', and stores output in 'rendered' var
-        return Main.conv_jinja_to_arr(rendered)                      # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
-
+        output = Template(j2templates.edgeos_int)
+        rendered = (output.render(interfaces=conf))
+        return Main.conv_jinja_to_arr(rendered)
 
     def deploy_yaml(ymlfile):
 
@@ -1103,100 +686,30 @@ class Cisco_IOS(Main):  # cisco specific commands
     ### start of generation methods
 
     def gen_vlan(vlans):
-        j2template ="""{% for vlan in vlans %}}
-vlan {{ vlan.id }}
-  name {{ desc }}
-{% if vlan.state == "disabled" -%}
-  shutdown
-{% endif -%}
-{% endfor -%}}"""
-        output = Template(j2template)
+        output = Template(j2templates.ios_vlan)
         rendered = (output.render(vlans=vlans)) 
-        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_int(interfaces):
-        j2template = """
-{% for int in interfaces -%}
-
-{% if int.state == 'absent' -%}
-interface {{ int.name }}
-shutdown
-{% endif -%}
-interface {{ int.name }}
-description {{ int.desc }}
-{% if int.routed == True -%}
-no switchport
-ip address {{int.ip}} {{int.mask}}
-{% endif -%}
-
-
-{% if int.mode == "trunk" -%}
-switchport mode trunk
-{% endif -%}
-
-{% if int.native_vlan is defined and int.native_vlan|length -%}
-switchport trunk native vlan {{ int.native_vlan}}
-{% endif -%}
-
-{% if int.spanning_tree == "portfast trunk" -%}
-spanning-tree portfast trunk
-{% endif -%}
-
-{% if int.allowed_vlans is defined and int.allowed_vlans|length -%}
-switchport trunk allowed vlan {{ int.allowed_vlans }}
-{% endif -%}
-
-{% if int.access_vlan is defined and int.access_vlan|length -%}
-switchport access vlan {{ int.access_vlan }}
-{% endif -%}
-
-{% if int.mode == "access" -%}
-switchport mode access
-{% endif -%}
-
-{% if int.spanning_tree == "portfast" -%}
-spanning-tree portfast
-{% endif -%}
-
-
-no shutdown
-
-{% endfor %}
-"""
-        output = Template(j2template)
-        rendered = (output.render(interfaces=interfaces))            # left interfaces var in j2 file,
-        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.ios_int)
+        rendered = (output.render(interfaces=interfaces))            
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_hostname(hostname):
-        j2template = "hostname {{ hostname }}"                                  
-        output = Template(j2template)                                # associates jinja hostname template with output
-        rendered = (output.render(hostname=hostname))                # renders template, with paramater 'hostname', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                    # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        j2template = "hostname {{ hostname }}"                       
+        output = Template(j2template)                                
+        rendered = (output.render(hostname=hostname))                
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def gen_ospf_networks(networks):                      
-        j2template = """router ospf 1
-{% for net in networks %}
-{% if net.state == "absent" -%}
- no network {{ net.subnet }} {{ net.mask }} area {{ net.area }}
-{% else -%}
- network {{ net.subnet }} {{ net.mask }} area {{ net.area }}{% endif -%}
-{% endfor -%}"""
-        
-        output = Template(j2template)                                 # associates jinja hostname template with output
-        rendered = (output.render(networks=networks))                 # renders template, with paramater 'networks', and stores output in 'rendered' var
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        output = Template(j2templates.ios_ospf)                      
+        rendered = (output.render(networks=networks))                
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def set_lldp(self, run:bool) -> list:
-        j2template = """
-{% if run == true %}
-cdp run
-{% elif run == false %}
-no cdp run
-{% endif %}"""
-        output = Template(j2template)                                 # associates jinja hostname template with output
+        output = Template(j2templates.ios_lldp)                      
         rendered = (output.render(run=run)) 
-
-        return (Main.conv_jinja_to_arr(rendered))                     # pushes rendered var through 'conv_jinja_to_arr' method, to convert commands to an array (needed for netmiko's bulk_commands)
+        return (Main.conv_jinja_to_arr(rendered))                    
 
     def lint_yaml(ymlfile):
         with open(ymlfile) as file: # opens the yaml file
