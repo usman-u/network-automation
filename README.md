@@ -2,6 +2,21 @@
 
 An *Ansible like* Network Automation Framework, Using Python OOP and Netmiko to interface with Cisco IOS, VyOS, EdgeOS network devices.
 
+# Developer Notes
+```bash
+conda create -n network-automation
+create activate network-automation
+poetry install
+```
+If using VSCode SSH remote, change interpreter to conda env python path.
+
+e.g. `/home/usman/miniconda3/envs/network-automation/bin/python`
+
+Confirm with `which python`
+```
+(network-automation) usman@dev-usman-lan:~/network-automation$ which python
+/home/usman/miniconda3/envs/network-automation/bin/python
+```
 # Usage
 
 ## Example 1: Getting Basic Device Information from a VyOS Router 
