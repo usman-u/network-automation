@@ -1,6 +1,6 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
-import j2templates
+from net_automation import j2templates
 import datetime
 import os
 import yaml
