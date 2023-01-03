@@ -20,12 +20,14 @@ class Main():
         # gets ssh data from kwargs object
         self.device_type = kwargs.get("device_type")
         self.host = kwargs.get("host")
+        self.nickname = kwargs.get("nickname")
         self.username = self.validate_is_string(kwargs.get("username"))
         self.__password = kwargs.get("password")
         self.use_keys = self.validate_use_keys(kwargs.get("use_keys"))
         self.key_file = kwargs.get("key_file")
         self.secret = kwargs.get("secret")
 
+        # SSH dict for netmiko
         self.SSH_data = {
             'device_type': self.device_type,
             'host':   self.host,
@@ -331,12 +333,25 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         """
         :param state: disabled, disables interface
                     : deleted,  deletes interface
-                    : else,     interface remains
+                    : present,     interface remains
         """
 
         output = Template(j2templates.vyos_int)                      
         rendered = (output.render(interfaces=conf))                  
         return Main.conv_jinja_to_arr(rendered)                      
+
+    def gen_wireguard_int(state, type, name, ip, mask, desc, firewall, 
+                            port, privkey, wg_peers):
+        """
+        :param state: disabled, disables interface
+                    : deleted,  deletes interface
+                    : present,     interface remains
+        """
+        output = Template(j2templates.vyos_wireguard_int)                      
+        rendered = output.render(state=state, name=name, type=type, ip=ip, mask=mask,
+                                    desc=desc, firewall=firewall, port=port, privkey=privkey,
+                                        wg_peers=wg_peers)
+        return Main.conv_jinja_to_arr(rendered)
 
     def gen_ospf(ospf):
         output = Template(j2templates.vyos_ospf)                     
@@ -411,6 +426,14 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             interfaces = device.get("interfaces")
             if interfaces != None:
                 to_deploy.append (Vyos.gen_int(interfaces))
+
+            wireguard_interfaces = device.get("wireguard_interfaces")
+            if wireguard_interfaces != None:
+                for wg_int in wireguard_interfaces:
+                    rendered =  (Vyos.gen_wireguard_int(wg_int["state"], wg_int["type"], wg_int["name"], wg_int["ip"], wg_int["mask"],
+                                                                    wg_int["desc"], wg_int["firewall"], wg_int["port"],
+                                                                       os.environ.get(wg_int["privkey"]), wg_int["wg_peers"]))
+                    to_deploy.append(rendered)
 
             bgpasn = device.get("bgpasn")
             bgp_peers = device.get("bgp_peers")
