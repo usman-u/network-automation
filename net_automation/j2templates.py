@@ -26,32 +26,72 @@ set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{
 {% endfor -%}
 {% endif -%}
 
-{%if int.type == "wireguard" -%}
-{% if int.port is defined and int.port|length -%}
-set interfaces {{ int.type }} {{ int.name }} port {{ int.port }}
+
 {% endif -%}
 
-{% for peer in int.wg_peers -%}
+{% endfor -%}
+"""
 
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
 
-{% if peer.endpoint is defined and peer.endpoint|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} endpoint '{{ peer.endpoint }}'
+vyos_wireguard_int ="""
+{% if state == "deleted" -%}
+delete interfaces {{ type }} {{ name }}
+
+{% else %}
+
+{% if state == "disabled" -%} 
+set interfaces {{ type }} {{ name }} disable
+{%endif-%}
+
+{% if state == "present" -%} 
+delete interfaces {{ type }} {{ name }} disable
+{%endif-%}
+
+set interfaces {{ type }} {{ name }} address {{ ip }}{{ mask }}
+
+{% if desc and desc|length %}
+set interfaces {{ type }} {{ name }} description '{{ desc }}'
+{% endif -%}
+
+{% if firewall -%}
+{% for fw in firewall -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+
+{%if type == "wireguard" -%}
+
+{% if port is defined and port|length -%}
+set interfaces {{ type }} {{ name }} port {{ port }}
+{% endif -%}
+
+{% if privkey is defined and privkey|length -%}
+set interfaces {{ type }} {{ name }} private-key {{ privkey }}
+{% endif -%}
+
+{% for peer in wg_peers -%}
+
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
+
+{% if peer.address is defined and peer.address|length -%}
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} address '{{ peer.address }}'
+{% endif -%}
+
+{% if peer.port is defined and peer.port|length -%}
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} port '{{ peer.port }}'
 {% endif -%}
 
 {% if peer.keepalive is defined and peer.keepalive|length -%}
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} persistent-keepalive '{{ peer.keepalive }}'
 {% endif -%}
 
-set interfaces {{ int.type }} {{ int.name }} peer {{ peer.name }} pubkey '{{ peer.pubkey }}'
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} public-key '{{ peer.pubkey }}'
 
 {% endfor -%}
 
 {% endif -%}
 
 {% endif -%}
-
-{% endfor -%}
 """
 
 vyos_bgp_peer = """
