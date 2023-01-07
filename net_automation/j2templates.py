@@ -278,12 +278,25 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {
 
 
 {% if rule.source is defined and rule.source|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source '{{ rule.source }}' 
+
+{% for s in rule.source -%}
+
+{% if s["address"] is defined and s["address"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source address "{{ s['address'] }}"
+{% endif -%}
+
+{% if s["port"] is defined and s["port"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
+{% endif -%}
+
+{% endfor-%}
+
 {%endif -%}
 
 {% if rule.protocol is defined and rule.protocol|length -%}
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
 {%endif -%}
+
 
 {% if rule.states is defined -%}
 
