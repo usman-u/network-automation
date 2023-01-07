@@ -258,29 +258,49 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rul
 
 {% if rule.dest is defined -%}
 
-{% if rule.dest["address"] is defined and rule.dest["address"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ rule.dest["address"] }}"
+{% for d in rule.dest -%}
+
+{% if d["address"] is defined and d["address"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ d['address'] }}"
 {% endif -%}
 
-{% if rule.dest["port"] is defined and rule.dest["port"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ rule.dest["port"] }}"
+{% if d['port'] is defined and d['port']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ d['port'] }}"
 {% endif -%}
 
-{% if rule.dest["group"] is defined and rule.dest["group"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ rule.dest["group"] }}
+{% if d['group'] is defined and d['group']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ d['group'] }}
 {% endif -%}
 
+{% endfor-%}
 
 {% endif -%}
 
 
 {% if rule.source is defined and rule.source|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source '{{ rule.source }}' 
+
+{% for s in rule.source -%}
+
+{% if s["address"] is defined and s["address"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source address "{{ s['address'] }}"
+{% endif -%}
+
+{% if s["port"] is defined and s["port"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
+{% endif -%}
+
+{% if s['group'] is defined and s['group']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source group {{ s['group'] }}
+{% endif -%}
+
+{% endfor-%}
+
 {%endif -%}
 
 {% if rule.protocol is defined and rule.protocol|length -%}
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
 {%endif -%}
+
 
 {% if rule.states is defined -%}
 

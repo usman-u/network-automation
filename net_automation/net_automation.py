@@ -1,6 +1,7 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
-from net_automation import j2templates
+# from net_automation import j2templates
+import j2templates
 import datetime
 import os
 import yaml
@@ -11,6 +12,7 @@ from discord_webhook import DiscordWebhook
 from difflib import Differ
 import requests
 import textfsm
+import time
 
 class Main():
 
@@ -406,7 +408,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                                   legacy_protocols=legacy_protocols)) 
         return (Main.conv_jinja_to_arr(rendered))
 
-    def deploy_yaml(ymlfile):
+    def deploy_yaml(ymlfile, dry_run):
 
         with open(ymlfile) as file: # opens the yaml file
             raw = yaml.safe_load(file)    # reads and stores the yaml file in raw var
@@ -469,13 +471,14 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             if dhservers != None:
                 to_deploy.append(Vyos.gen_dhcp(dhservers))
 
-            print("----------------------------")
-            print("TO DEPLOY")
-            print("----------------------------")
-            for i in to_deploy:  # loops through command arrays
-                for j in i:
-                    print (j)    # and prints them
-            print("----------------------------")
+            if dry_run:
+                print("----------------------------")
+                print("DRY RUN -- TO DEPLOY -- DRY RUN")
+                print("----------------------------")
+                for i in to_deploy:  # loops through command arrays
+                    for j in i:
+                        print (j)    # and prints them
+                print("----------------------------")
 
             router = Vyos(
                 device_type = "vyos",
@@ -502,10 +505,22 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             print ("----------------------------")
             print (Vyos.get_changed(router))       # sends "compare" command
             print ("----------------------------")
-            print ("Committing Changes")
-            Vyos.commit(router)
-            print ("Changes Committed, Success")
 
+            if not dry_run:
+                print ("----------------------------")
+                print ("Committing Changes")
+                Vyos.commit(router)
+                print ("----------------------------")
+                print ("Changes Committed, Success")
+                print ("----------------------------")
+
+            if dry_run:
+                Vyos.discard_changes(router)
+                print ("----------------------------")
+                print ("DRY RUN FINISHED")
+                print ("----------------------------")
+                print ("CHANGES DISCARDED")
+                print ("----------------------------")
 
 class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
