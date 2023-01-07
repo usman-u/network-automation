@@ -258,18 +258,21 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rul
 
 {% if rule.dest is defined -%}
 
-{% if rule.dest["address"] is defined and rule.dest["address"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ rule.dest["address"] }}"
+{% for d in rule.dest -%}
+
+{% if d["address"] is defined and d["address"]|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ d['address'] }}"
 {% endif -%}
 
-{% if rule.dest["port"] is defined and rule.dest["port"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ rule.dest["port"] }}"
+{% if d['port'] is defined and d['port']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ d['port'] }}"
 {% endif -%}
 
-{% if rule.dest["group"] is defined and rule.dest["group"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ rule.dest["group"] }}
+{% if d['group'] is defined and d['group']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ d['group'] }}
 {% endif -%}
 
+{% endfor-%}
 
 {% endif -%}
 
