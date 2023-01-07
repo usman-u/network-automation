@@ -1,6 +1,7 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
-from net_automation import j2templates
+# from net_automation import j2templates
+import j2templates
 import datetime
 import os
 import yaml
@@ -474,7 +475,6 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                 print("----------------------------")
                 print("DRY RUN -- TO DEPLOY -- DRY RUN")
                 print("----------------------------")
-                time.sleep(10)
                 for i in to_deploy:  # loops through command arrays
                     for j in i:
                         print (j)    # and prints them
