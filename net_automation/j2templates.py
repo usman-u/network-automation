@@ -289,6 +289,10 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source address "{{ 
 set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
 {% endif -%}
 
+{% if s['group'] is defined and s['group']|length -%}
+set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source group {{ s['group'] }}
+{% endif -%}
+
 {% endfor-%}
 
 {%endif -%}
