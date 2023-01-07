@@ -391,6 +391,11 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         output = Template(j2templates.vyos_firewall)               
         rendered = (output.render(firewalls=firewalls))            
         return (Main.conv_jinja_to_arr(rendered))                  
+    
+    def gen_groups(state, name, type, desc, networks):
+        output = Template(j2templates.vyos_groups)               
+        rendered = (output.render(state=state, name=name, type=type, desc=desc, networks=networks))            
+        return (Main.conv_jinja_to_arr(rendered))                  
 
     def gen_zones(zones):
         output = Template(j2templates.vyos_zones)                  
@@ -424,6 +429,12 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             hostname = device.get("name")               
             if hostname != None:                                                   
                 to_deploy.append (Vyos.gen_hostname(hostname))                     
+
+            groups = device.get("groups")
+            if groups != None:
+                for group in groups:
+                    rendered = Vyos.gen_groups(group["state"], group["name"], group["type"], group["desc"], group["networks"])
+                    to_deploy.append (rendered)
 
             interfaces = device.get("interfaces")
             if interfaces != None:

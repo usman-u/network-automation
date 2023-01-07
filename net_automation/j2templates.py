@@ -319,6 +319,14 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name
 
 {%endfor -%}"""
 
+vyos_groups="""
+set firewall group {{type}}-group {{ name }}
+set firewall group {{type}}-group {{ name }} description '{{ desc }}'
+{% for net in networks -%}
+set firewall group {{type}}-group {{ name }} network {{ net }}
+{% endfor -%}
+"""
+
 vyos_zones = """
 {% for zone in zones -%}
 
