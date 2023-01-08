@@ -94,37 +94,6 @@ set interfaces {{ type }} {{ name }} peer {{ peer.name }} public-key '{{ peer.pu
 {% endif -%}
 """
 
-vyos_bgp_peer = """
-{%for peer in peers -%}
-{%if peer.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }}
-{% else -%}
-{%if peer.state == "disabled"-%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} shutdown
-{%endif-%}
-
-{% if peer.state == "present" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} disable
-{% endif -%}
-
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} remote-as {{ peer.remote_as }}
-{%if peer.desc is defined and peer.desc|length -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} description {{ peer.desc }}
-{% endif -%}
-{%if peer.ebgp_multihop is defined and peer.ebgp_multihop|length -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} ebgp-multihop {{ peer.ebgp_multihop }}
-{% endif -%}
-{%if peer.route_maps -%}
-{%for rm in peer.route_maps -%}  
-{%if rm.state == "absent" -%}
-delete protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-{% else -%}
-set protocols bgp {{ localAS }} neighbor {{ peer.ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-{%endif -%}
-{%endfor -%}
-{%endif -%} 
-{%endif -%}
-{% endfor -%}"""
 
 
 vyos_ospf = """
@@ -167,16 +136,58 @@ set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 
 {% endfor -%}"""                                   
 
+vyos_bgp_asn = """
+set protocols bgp local-as {{ bgp_asn }}
+"""
 
-vyos_bgp_prefixes = """
-{% for prefix in prefixes -%}
-{% if prefix.state == "absent" -%}
-delete protocols bgp {{ localAS }} address-family {{ prefix.address_family }} network {{ prefix.prefix }}{{ prefix.mask }}
+vyos_bgp_prefix = """
+{% if state == "absent" -%}
+delete protocols bgp address-family {{ address_family }} network {{ prefix }}{{ mask }}
 {% else -%}
-set protocols bgp {{ localAS }} address-family {{ prefix.address_family }} network {{ prefix.prefix }}{{ prefix.mask }}
+set protocols bgp address-family {{ address_family }} network {{ prefix }}{{ mask }}
 {% endif -%}
-{% endfor -%}"""
+"""
 
+vyos_bgp_peer = """
+{%if state == "absent" -%}
+delete protocols bgp neighbor {{ peer_ip }}
+
+{% else -%}
+
+{% if state == "shutdown" -%}
+set protocols bgp neighbor {{ peer_ip }} shutdown
+{% endif -%}
+
+{% if state == "present" -%}
+delete protocols bgp neighbor {{ peer_ip }} shutdown
+{% endif -%}
+
+set protocols bgp neighbor {{ peer_ip }} remote-as {{ remote_as }}
+
+{%if desc is defined and desc|length -%}
+set protocols bgp neighbor {{ peer_ip }} description {{ desc }}
+{% endif -%}
+
+{%if ebgp_multihop is defined and ebgp_multihop|length -%}
+set protocols bgp neighbor {{ peer_ip }} ebgp-multihop {{ ebgp_multihop }}
+{% endif -%}
+
+{%if route_maps -%}
+{%for rm in route_maps -%}  
+
+{%if rm.state == "absent" -%}
+
+delete protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
+
+{% else -%}
+set protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% endif -%}
+{% endfor -%}
+
+{%endif -%} 
+{%endif -%}
+
+"""
 
 vyos_routemap = """
 {%- for map in route_maps -%}

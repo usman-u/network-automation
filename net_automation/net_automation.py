@@ -1,7 +1,7 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
-from net_automation import j2templates
-# import j2templates
+# from net_automation import j2templates
+import j2templates
 import datetime
 import os
 import yaml
@@ -78,6 +78,10 @@ class Main():
         diff=difflib.unified_diff(expected, actual)
 
         return ''.join(diff)
+    
+    def key_exists(key):
+        pass
+
 
 
     # vendor neutral methods - common commands that are syntaxically identical on various network systems
@@ -359,16 +363,23 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         output = Template(j2templates.vyos_ospf)                     
         rendered = (output.render(ospf=ospf))
         return (Main.conv_jinja_to_arr(rendered))                    
+    
+    def gen_bgp_asn(bgp_asn):
+        output = Template(j2templates.vyos_bgp_asn)                 
+        rendered = (output.render(bgp_asn=bgp_asn))     
+        return (Main.conv_jinja_to_arr(rendered))                    
 
-    def gen_bgp_peer(peers, localAS):
+    def gen_bgp_peer(state, desc, peer_ip, remote_as, ebgp_multihop, route_maps):
         output = Template(j2templates.vyos_bgp_peer)                 
-        rendered = (output.render(peers=peers, localAS=localAS))     
+        rendered = (output.render(state=state, desc=desc, peer_ip=peer_ip, remote_as=remote_as, 
+                                    ebgp_multihop=ebgp_multihop, route_maps=route_maps))
         return (Main.conv_jinja_to_arr(rendered))                    
     
-    def gen_bgp_prefixes(prefixes, localAS):
-        output = Template(j2templates.vyos_bgp_prefixes)             
-        rendered = (output.render(prefixes=prefixes, localAS=localAS))
-        return (Main.conv_jinja_to_arr(rendered))                    
+    def gen_bgp_prefix(state, bgp_asn, address_family, prefix, mask):
+        output = Template(j2templates.vyos_bgp_prefix)
+        rendered = (output.render(state=state, bgp_asn=bgp_asn, address_family=address_family, 
+                        prefix=prefix, mask=mask))
+        return (Main.conv_jinja_to_arr(rendered))
 
     def gen_route_map(route_maps):
         output = Template(j2templates.vyos_routemap)                 
@@ -448,15 +459,23 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
                                                                        os.environ.get(wg_int["privkey"]), wg_int["wg_peers"]))
                     to_deploy.append(rendered)
 
-            bgpasn = device.get("bgpasn")
-            bgp_peers = device.get("bgp_peers")
-
-            if bgpasn != None and bgp_peers != None:
-                to_deploy.append (Vyos.gen_bgp_peer(bgp_peers, bgpasn))
+            bgp_prefixes = device.get("bgp").get("prefixes")
+            bgp_asn = device.get("bgp").get("asn")
+            bgp_peers = device.get("bgp").get("peers")
             
-            bgp_prefixes = device.get("bgp_prefixes")
-            if bgp_prefixes != None:
-                to_deploy.append (Vyos.gen_bgp_prefixes(bgp_prefixes, bgpasn))
+            if bgp_asn != None and bgp_prefixes != None and bgp_peers != None:
+                to_deploy.append(Vyos.gen_bgp_asn(bgp_asn))
+
+                for prefix in bgp_prefixes:
+                    rendered = Vyos.gen_bgp_prefix(prefix["state"], bgp_asn, prefix["address_family"], prefix["prefix"], prefix["mask"])
+                    to_deploy.append(rendered)
+
+                for peer in bgp_peers:
+                    rendered = Vyos.gen_bgp_peer(peer["state"], peer["desc"], peer["ip"], peer["remote_as"],
+                                                    peer["ebgp_multihop"], peer["route_maps"])
+                    
+                    to_deploy.append(rendered)
+        
 
             route_maps = device.get("route_maps")
             if route_maps != None:
