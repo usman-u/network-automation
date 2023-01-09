@@ -392,9 +392,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         rendered = (output.render(prefix_lists=prefix_lists))        
         return (Main.conv_jinja_to_arr(rendered))                    
 
-    def gen_static(static_routes):
+    def gen_static(type, network, nexthop, distance, state):
         output = Template(j2templates.vyos_static)                                 
-        rendered = (output.render(static=static_routes))              
+        rendered = (output.render(type=type, network=network, nexthop=nexthop, distance=distance, state=state))              
         return (Main.conv_jinja_to_arr(rendered))                     
 
 
@@ -495,7 +495,10 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
             static_routes = device.get("static")
             if static_routes != None:
-                to_deploy.append(Vyos.gen_static(static_routes))
+                for route in static_routes:
+                    rendered = Vyos.gen_static(route["type"], route["network"], route["nexthop"], route["distance"],
+                                                        route["state"])
+                    to_deploy.append(rendered)
 
             dhservers = device.get("dhcp")
             if dhservers != None:

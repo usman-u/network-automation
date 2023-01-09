@@ -229,25 +229,26 @@ set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} prefix {{ rule.ma
 
 
 vyos_static = """
-{% for route in static -%}
-{% if route.state == "absent" -%}
-delete protocols static {{ route.type }} {{ route.network }}
+{% if state == "absent" or state == "deleted" -%}
+delete protocols static {{ type }} {{ network }}
 {% else -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop-interface {{ route.nexthop }}
-{% if route.distance is defined and route.distance|length -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop-interface {{ route.nexthop }} distance {{ route.distance }}
-{%endif -%}
-{%endif -%}
 
-{% if route.type == "route" -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop {{ route.nexthop }}
+{% if type == "interface-route" -%}
+set protocols static route {{ network }} interface {{ nexthop }}
+{% if distance is defined and distance|length -%}
+set protocols static route {{ network }} interface {{ nexthop }} distance {{ distance }}
+{% endif -%}
+{% endif -%}
 
-{% if route.distance is defined and route.distance|length -%}
-set protocols static {{ route.type }} {{ route.network }} next-hop {{ route.nexthop }} distance {{ route.distance }}
-{%endif -%}
-{%endif -%}
+{% if type == "route" -%}
+set protocols static route {{ network }} next-hop {{ nexthop }}
+{% if distance is defined and distance|length -%}
+set protocols static route {{ network }} next-hop {{ nexthop }} distance {{ distance }}
+{% endif -%}
+{% endif -%}
 
-{%endfor -%}"""
+{% endif -%}
+"""
 
 vyos_firewall  = """
 {% for ruleset in firewalls -%}
