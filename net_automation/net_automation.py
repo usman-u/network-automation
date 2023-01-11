@@ -44,6 +44,11 @@ class Main():
         print ("Connecting to", self.host)
         self.SSHConnection = ConnectHandler(**self.SSH_data)
         print ("Connected to", self.host)
+
+    def check_ssh(device):
+        if hasattr(device, "SSHConnection"):
+            return True
+        return False
     
     def validate_is_string(self, inp):
         if type(inp) != str:
@@ -229,6 +234,9 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
     
     def get_ospf_route_all(self):
         return (self.SSHConnection.send_command('show ip ospf route'))
+
+    def get_bgp_route(self, target):
+        return (self.SSHConnection.send_command(f"show ip bgp ipv4 unicast {target}"))
     
     def get_ospf_neighbors(self):
         return (self.SSHConnection.send_command("show ip ospf neighbor"))
