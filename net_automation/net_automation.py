@@ -16,7 +16,7 @@ import textfsm
 import time
 
 
-class Main:
+class Device:
     # attributes are standard for netmiko functionality
     def __init__(self, **kwargs):
         # gets ssh data from kwargs object
@@ -220,8 +220,7 @@ class Webhook:
         )
         webhook.execute()
 
-
-class Vyos(Main):  # Vyos/EdgeOS specific commands
+class Vyos(Device):  # Vyos/EdgeOS specific commands
     """
     Functions specific to VyOS
     """
@@ -395,7 +394,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
         j2template = "set system host-name {{ hostname }}"
         output = Template(j2template)
         rendered = output.render(hostname=hostname)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_int(conf):
         """
@@ -406,7 +405,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
 
         output = Template(j2templates.vyos_int)
         rendered = output.render(interfaces=conf)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_wireguard_int(
         state, type, name, ip, mask, desc, firewall, port, privkey, wg_peers
@@ -429,17 +428,17 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             privkey=privkey,
             wg_peers=wg_peers,
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_ospf(ospf):
         output = Template(j2templates.vyos_ospf)
         rendered = output.render(ospf=ospf)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_bgp_asn(bgp_asn):
         output = Template(j2templates.vyos_bgp_asn)
         rendered = output.render(bgp_asn=bgp_asn)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_bgp_peer(state, desc, peer_ip, remote_as, ebgp_multihop, route_maps):
         output = Template(j2templates.vyos_bgp_peer)
@@ -451,7 +450,7 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             ebgp_multihop=ebgp_multihop,
             route_maps=route_maps,
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_bgp_prefix(state, bgp_asn, address_family, prefix, mask):
         output = Template(j2templates.vyos_bgp_prefix)
@@ -462,53 +461,53 @@ class Vyos(Main):  # Vyos/EdgeOS specific commands
             prefix=prefix,
             mask=mask,
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_route_map(route_maps):
         output = Template(j2templates.vyos_routemap)
         rendered = output.render(route_maps=route_maps)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_prefix_list(prefix_lists):
         output = Template(j2templates.vyos_prefix_list)
         rendered = output.render(prefix_lists=prefix_lists)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_static(type, network, nexthop, distance, state):
         output = Template(j2templates.vyos_static)
         rendered = output.render(
             type=type, network=network, nexthop=nexthop, distance=distance, state=state
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_firewalls(firewalls):
         output = Template(j2templates.vyos_firewall)
         rendered = output.render(firewalls=firewalls)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_groups(state, name, type, desc, networks):
         output = Template(j2templates.vyos_groups)
         rendered = output.render(
             state=state, name=name, type=type, desc=desc, networks=networks
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_zones(zones):
         output = Template(j2templates.vyos_zones)
         rendered = output.render(zones=zones)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_dhcp(dhcp):
         output = Template(j2templates.vyos_dhcp)
         rendered = output.render(dhservers=dhcp)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def set_lldp(self, interfaces, legacy_protocols) -> str:
         output = Template(j2templates.vyos_lldp)
         rendered = output.render(
             interfaces=interfaces, legacy_protocols=legacy_protocols
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def deploy_yaml(ymlfile, dry_run):
         with open(ymlfile) as file:  # opens the yaml file
@@ -716,7 +715,7 @@ class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
         rendered = output.render(
             interfaces=interfaces, legacy_protocols=legacy_protocols
         )
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_int(conf):
         """
@@ -727,7 +726,7 @@ class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
 
         output = Template(j2templates.edgeos_int)
         rendered = output.render(interfaces=conf)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def deploy_yaml(ymlfile):
         with open(ymlfile) as file:  # opens the yaml file
@@ -827,7 +826,7 @@ class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
             print("Changes Committed, Success")
 
 
-class Cisco_IOS(Main):  # cisco specific commands
+class Cisco_IOS(Device):  # cisco specific commands
     # inherits all methods and attributes from MAIN class
     # sends 'cisco_ios' as an argument, so user doesn't have to specify device_type
     def __init__(self, **kwargs):
@@ -899,28 +898,28 @@ class Cisco_IOS(Main):  # cisco specific commands
     def gen_vlan(vlans):
         output = Template(j2templates.ios_vlan)
         rendered = output.render(vlans=vlans)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_int(interfaces):
         output = Template(j2templates.ios_int)
         rendered = output.render(interfaces=interfaces)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_hostname(hostname):
         j2template = "hostname {{ hostname }}"
         output = Template(j2template)
         rendered = output.render(hostname=hostname)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def gen_ospf_networks(networks):
         output = Template(j2templates.ios_ospf)
         rendered = output.render(networks=networks)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def set_lldp(self, run: bool) -> list:
         output = Template(j2templates.ios_lldp)
         rendered = output.render(run=run)
-        return Main.conv_jinja_to_arr(rendered)
+        return Device.conv_jinja_to_arr(rendered)
 
     def lint_yaml(ymlfile):
         with open(ymlfile) as file:  # opens the yaml file
@@ -989,5 +988,5 @@ class Cisco_IOS(Main):  # cisco specific commands
             print("----------------------------")
             print("Diff/Changes:")
             running_conf_after = Cisco_IOS.get_all_config(router1)
-            print(Main._unidiff_output(running_conf_before, running_conf_after))
+            print(Device._unidiff_output(running_conf_before, running_conf_after))
             print("----------------------------")
