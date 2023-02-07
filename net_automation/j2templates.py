@@ -1,39 +1,46 @@
-vyos_int ="""
-{% for int in interfaces -%}
+vyos_int = """
 
-{% if int.state == "absent" -%}
-delete interfaces {{ int.type }} {{ int.name }}
+{% if state == "absent" -%}
+delete interfaces {{ type }} {{ name }}
 
 {% else %}
 
-{% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disable
+{% if state == "disabled" -%} 
+set interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-{% if int.state == "present" -%} 
-delete interfaces {{ int.type }} {{ int.name }} disable
+{% if state == "present" -%} 
+delete interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
+{% for addr in addrs -%}
+set interfaces {{ type }} {{ name }} address {{ addr }}
+{% endfor -%}
 
-{% if int.desc and int.desc|length %}
-set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+{% if desc and desc|length %}
+set interfaces {{ type }} {{ name }} description '{{ desc }}'
 {% endif -%}
 
-{% if int.firewall -%}
-{% for fw in int.firewall -%}
-set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+{% if firewall -%}
+
+{% if firewall["ipv4-unicast"] %}
+{% for fw in firewall["ipv4-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
 
-
+{% if firewall["ipv6-unicast"] %}
+{% for fw in firewall["ipv6-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
 {% endif -%}
 
-{% endfor -%}
+{% endif -%}
 """
 
 
-vyos_wireguard_int ="""
+vyos_wireguard_int = """
 {% if state == "deleted" -%}
 delete interfaces {{ type }} {{ name }}
 
@@ -47,17 +54,30 @@ set interfaces {{ type }} {{ name }} disable
 delete interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-set interfaces {{ type }} {{ name }} address {{ ip }}{{ mask }}
+{% for addr in addrs -%}
+set interfaces {{ type }} {{ name }} address {{ addr }}
+{% endfor -%}
 
 {% if desc and desc|length %}
 set interfaces {{ type }} {{ name }} description '{{ desc }}'
 {% endif -%}
 
 {% if firewall -%}
-{% for fw in firewall -%}
+
+{% if firewall["ipv4-unicast"] %}
+{% for fw in firewall["ipv4-unicast"] -%}
 set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
+
+{% if firewall["ipv6-unicast"] %}
+{% for fw in firewall["ipv6-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+
+{% endif -%}
+
 
 {%if type == "wireguard" -%}
 
@@ -71,7 +91,9 @@ set interfaces {{ type }} {{ name }} private-key {{ privkey }}
 
 {% for peer in wg_peers -%}
 
-set interfaces {{ type }} {{ name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
+{% for ip in peer.allowedips %}
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} allowed-ips '{{ ip }}'
+{% endfor -%}
 
 {% if peer.address is defined and peer.address|length -%}
 set interfaces {{ type }} {{ name }} peer {{ peer.name }} address '{{ peer.address }}'
@@ -93,7 +115,6 @@ set interfaces {{ type }} {{ name }} peer {{ peer.name }} public-key '{{ peer.pu
 
 {% endif -%}
 """
-
 
 
 vyos_ospf = """
@@ -134,7 +155,7 @@ set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 
 {% endif -%}
 
-{% endfor -%}"""                                   
+{% endfor -%}"""
 
 vyos_bgp_asn = """
 set protocols bgp local-as {{ bgp_asn }}
@@ -168,21 +189,40 @@ set protocols bgp neighbor {{ peer_ip }} remote-as {{ remote_as }}
 set protocols bgp neighbor {{ peer_ip }} description {{ desc }}
 {% endif -%}
 
+{%if source_interface is defined and source_interface|length -%}
+set protocols bgp neighbor {{ peer_ip }} interface source-interface {{ source_interface }}
+set protocols bgp neighbor {{ peer_ip }} interface remote-as {{ remote_as }}
+{% endif -%}
+
+{%if extended_next_hop -%}
+set protocols bgp neighbor {{ peer_ip }} capability extended-nexthop
+{% endif -%}
+
 {%if ebgp_multihop is defined and ebgp_multihop|length -%}
 set protocols bgp neighbor {{ peer_ip }} ebgp-multihop {{ ebgp_multihop }}
 {% endif -%}
 
 {%if route_maps -%}
-{%for rm in route_maps -%}  
 
+{%if route_maps["ipv4-unicast"]-%}
+{%for rm in route_maps["ipv4-unicast"] -%}  
 {%if rm.state == "absent" -%}
-
 delete protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-
 {% else -%}
 set protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
 {% endif -%}
 {% endfor -%}
+{% endif -%}
+
+{%if route_maps["ipv6-unicast"]-%}
+{%for rm in route_maps["ipv6-unicast"] -%}  
+{%if rm.state == "absent" -%}
+delete protocols bgp neighbor {{ peer_ip }} address-family ipv6-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% else -%}
+set protocols bgp neighbor {{ peer_ip }} address-family ipv6-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
 
 {%endif -%} 
 {%endif -%}
@@ -250,7 +290,7 @@ set protocols static route {{ network }} next-hop {{ nexthop }} distance {{ dist
 {% endif -%}
 """
 
-vyos_firewall  = """
+vyos_firewall = """
 {% for ruleset in firewalls -%}
 
 set firewall name {{ ruleset.name }} 
@@ -331,7 +371,7 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name
 
 {%endfor -%}"""
 
-vyos_groups="""
+vyos_groups = """
 set firewall group {{type}}-group {{ name }}
 set firewall group {{type}}-group {{ name }} description '{{ desc }}'
 {% for net in networks -%}
@@ -431,7 +471,7 @@ set service lldp legacy-protocols {{ protocol }}
 {% endfor -%}
 {% endif -%}"""
 
-edgeos_int  ="""
+edgeos_int = """
 {% for int in interfaces -%}
 
 {% if int.state == "absent" -%}
