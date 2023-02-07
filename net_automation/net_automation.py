@@ -396,7 +396,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         rendered = output.render(hostname=hostname)
         return Device.conv_jinja_to_arr(rendered)
 
-    def gen_int(conf):
+    def gen_int(state, type, name, addrs, desc, firewall):
         """
         :param state: disabled, disables interface
                     : deleted,  deletes interface
@@ -404,11 +404,18 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         """
 
         output = Template(j2templates.vyos_int)
-        rendered = output.render(interfaces=conf)
+        rendered = output.render(
+            state=state,
+            name=name,
+            type=type,
+            addrs=addrs,
+            desc=desc,
+            firewall=firewall,
+            )
         return Device.conv_jinja_to_arr(rendered)
 
     def gen_wireguard_int(
-        state, type, name, ip, mask, desc, firewall, port, privkey, wg_peers
+        state, type, name, addrs, desc, firewall, port, privkey, wg_peers
     ):
         """
         :param state: disabled, disables interface
@@ -420,8 +427,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             state=state,
             name=name,
             type=type,
-            ip=ip,
-            mask=mask,
+            addrs=addrs,
             desc=desc,
             firewall=firewall,
             port=port,
@@ -541,7 +547,16 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
             interfaces = device.get("interfaces")
             if interfaces != None:
-                to_deploy.append(Vyos.gen_int(interfaces))
+                for interface in interfaces:
+                    print(interface)
+                    to_deploy.append(Vyos.gen_int(
+                        interface["state"],
+                        interface["type"],
+                        interface["name"],
+                        interface["addrs"],
+                        interface["desc"],
+                        interface["firewall"]
+                    ))
 
             wireguard_interfaces = device.get("wireguard_interfaces")
             if wireguard_interfaces != None:
@@ -550,8 +565,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
                         wg_int["state"],
                         wg_int["type"],
                         wg_int["name"],
-                        wg_int["ip"],
-                        wg_int["mask"],
+                        wg_int["addrs"],
                         wg_int["desc"],
                         wg_int["firewall"],
                         wg_int["port"],

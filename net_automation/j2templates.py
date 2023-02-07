@@ -1,35 +1,34 @@
 vyos_int ="""
-{% for int in interfaces -%}
 
-{% if int.state == "absent" -%}
-delete interfaces {{ int.type }} {{ int.name }}
+{% if state == "absent" -%}
+delete interfaces {{ type }} {{ name }}
 
 {% else %}
 
-{% if int.state == "disabled" -%} 
-set interfaces {{ int.type }} {{ int.name }} disable
+{% if state == "disabled" -%} 
+set interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-{% if int.state == "present" -%} 
-delete interfaces {{ int.type }} {{ int.name }} disable
+{% if state == "present" -%} 
+delete interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-set interfaces {{ int.type }} {{ int.name }} address {{ int.ip }}{{ int.mask }}
+{% for addr in addrs -%}
+set interfaces {{ type }} {{ name }} address {{ addr }}
+{% endfor -%}
 
-{% if int.desc and int.desc|length %}
-set interfaces {{ int.type }} {{ int.name }} description '{{ int.desc }}'
+{% if desc and desc|length %}
+set interfaces {{ type }} {{ name }} description '{{ desc }}'
 {% endif -%}
 
-{% if int.firewall -%}
-{% for fw in int.firewall -%}
-set interfaces {{ int.type }} {{ int.name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+{% if firewall -%}
+{% for fw in firewall -%}
+set interfaces {{ type }} {{ name }} firewall {{ direction }} name '{{ name }}'
 {% endfor -%}
 {% endif -%}
 
 
 {% endif -%}
-
-{% endfor -%}
 """
 
 
@@ -47,7 +46,9 @@ set interfaces {{ type }} {{ name }} disable
 delete interfaces {{ type }} {{ name }} disable
 {%endif-%}
 
-set interfaces {{ type }} {{ name }} address {{ ip }}{{ mask }}
+{% for addr in addrs -%}
+set interfaces {{ type }} {{ name }} address {{ addr }}
+{% endfor -%}
 
 {% if desc and desc|length %}
 set interfaces {{ type }} {{ name }} description '{{ desc }}'
@@ -71,7 +72,9 @@ set interfaces {{ type }} {{ name }} private-key {{ privkey }}
 
 {% for peer in wg_peers -%}
 
-set interfaces {{ type }} {{ name }} peer {{ peer.name }} allowed-ips '{{ peer.allowedips }}'
+{% for ip in peer.allowedips %}
+set interfaces {{ type }} {{ name }} peer {{ peer.name }} allowed-ips '{{ ip }}'
+{% endfor -%}
 
 {% if peer.address is defined and peer.address|length -%}
 set interfaces {{ type }} {{ name }} peer {{ peer.name }} address '{{ peer.address }}'
