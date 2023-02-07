@@ -278,6 +278,17 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
         return result
 
+    def get_bgp_peer(self, peerIP):
+        return self.SSHConnection.send_command(f"show ip bgp neighbors {peerIP}")
+
+    def get_bgp_peer_routes(self, peerIP):
+        return self.SSHConnection.send_command(f"show ip bgp neighbor {peerIP} routes")
+
+    def get_bgp_peer_advertised_routes(self, peerIP):
+        return self.SSHConnection.send_command(
+            f"show ip bgp neighbor {peerIP} advertised-routes"
+        )
+
     def get_interfaces(self):
         """Gets all interfaces on the device, including type, name, status, and description"""
         return self.SSHConnection.send_command("show interfaces", use_textfsm=True)
@@ -558,7 +569,6 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             interfaces = device.get("interfaces")
             if interfaces != None:
                 for interface in interfaces:
-                    print(interface)
                     to_deploy.append(
                         Vyos.gen_int(
                             interface["state"],
