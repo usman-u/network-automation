@@ -168,6 +168,15 @@ set protocols bgp neighbor {{ peer_ip }} remote-as {{ remote_as }}
 set protocols bgp neighbor {{ peer_ip }} description {{ desc }}
 {% endif -%}
 
+{%if source_interface is defined and source_interface|length -%}
+set protocols bgp neighbor {{ peer_ip }} interface source-interface{{ source_interface }}
+set protocols bgp neighbor {{ peer_ip }} interface remote-as {{ remote_as }}
+{% endif -%}
+
+{%if extended_next_hop -%}
+set protocols bgp neighbor {{ peer_ip }} capability extended-nexthop
+{% endif -%}
+
 {%if ebgp_multihop is defined and ebgp_multihop|length -%}
 set protocols bgp neighbor {{ peer_ip }} ebgp-multihop {{ ebgp_multihop }}
 {% endif -%}

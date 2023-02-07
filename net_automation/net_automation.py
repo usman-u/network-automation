@@ -440,7 +440,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         rendered = output.render(bgp_asn=bgp_asn)
         return Device.conv_jinja_to_arr(rendered)
 
-    def gen_bgp_peer(state, desc, peer_ip, remote_as, ebgp_multihop, route_maps):
+    def gen_bgp_peer(state, desc, peer_ip, remote_as, ebgp_multihop, route_maps, source_interface, extended_next_hop):
         output = Template(j2templates.vyos_bgp_peer)
         rendered = output.render(
             state=state,
@@ -449,6 +449,8 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             remote_as=remote_as,
             ebgp_multihop=ebgp_multihop,
             route_maps=route_maps,
+            source_interface=source_interface,
+            extended_next_hop=extended_next_hop,
         )
         return Device.conv_jinja_to_arr(rendered)
 
@@ -583,6 +585,8 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
                         peer["remote_as"],
                         peer["ebgp_multihop"],
                         peer["route_maps"],
+                        peer["source_interface"],
+                        peer["extended_next_hop"]
                     )
 
                     to_deploy.append(rendered)
