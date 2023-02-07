@@ -22,11 +22,19 @@ set interfaces {{ type }} {{ name }} description '{{ desc }}'
 {% endif -%}
 
 {% if firewall -%}
-{% for fw in firewall -%}
-set interfaces {{ type }} {{ name }} firewall {{ direction }} name '{{ name }}'
+
+{% if firewall["ipv4-unicast"] %}
+{% for fw in firewall["ipv4-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
 
+{% if firewall["ipv6-unicast"] %}
+{% for fw in firewall["ipv6-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+{% endif -%}
 
 {% endif -%}
 """
@@ -55,10 +63,21 @@ set interfaces {{ type }} {{ name }} description '{{ desc }}'
 {% endif -%}
 
 {% if firewall -%}
-{% for fw in firewall -%}
+
+{% if firewall["ipv4-unicast"] %}
+{% for fw in firewall["ipv4-unicast"] -%}
 set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
+
+{% if firewall["ipv6-unicast"] %}
+{% for fw in firewall["ipv6-unicast"] -%}
+set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+{% endfor -%}
+{% endif -%}
+
+{% endif -%}
+
 
 {%if type == "wireguard" -%}
 
