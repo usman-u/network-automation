@@ -169,7 +169,7 @@ set protocols bgp neighbor {{ peer_ip }} description {{ desc }}
 {% endif -%}
 
 {%if source_interface is defined and source_interface|length -%}
-set protocols bgp neighbor {{ peer_ip }} interface source-interface{{ source_interface }}
+set protocols bgp neighbor {{ peer_ip }} interface source-interface {{ source_interface }}
 set protocols bgp neighbor {{ peer_ip }} interface remote-as {{ remote_as }}
 {% endif -%}
 
@@ -182,16 +182,26 @@ set protocols bgp neighbor {{ peer_ip }} ebgp-multihop {{ ebgp_multihop }}
 {% endif -%}
 
 {%if route_maps -%}
-{%for rm in route_maps -%}  
 
+{%if route_maps["ipv4-unicast"]-%}
+{%for rm in route_maps["ipv4-unicast"] -%}  
 {%if rm.state == "absent" -%}
-
 delete protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
-
 {% else -%}
 set protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast route-map {{ rm.action }} {{ rm.route_map }}
 {% endif -%}
 {% endfor -%}
+{% endif -%}
+
+{%if route_maps["ipv6-unicast"]-%}
+{%for rm in route_maps["ipv6-unicast"] -%}  
+{%if rm.state == "absent" -%}
+delete protocols bgp neighbor {{ peer_ip }} address-family ipv6-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% else -%}
+set protocols bgp neighbor {{ peer_ip }} address-family ipv6-unicast route-map {{ rm.action }} {{ rm.route_map }}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
 
 {%endif -%} 
 {%endif -%}
