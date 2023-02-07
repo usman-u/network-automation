@@ -220,6 +220,7 @@ class Webhook:
         )
         webhook.execute()
 
+
 class Vyos(Device):  # Vyos/EdgeOS specific commands
     """
     Functions specific to VyOS
@@ -411,7 +412,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             addrs=addrs,
             desc=desc,
             firewall=firewall,
-            )
+        )
         return Device.conv_jinja_to_arr(rendered)
 
     def gen_wireguard_int(
@@ -446,7 +447,16 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         rendered = output.render(bgp_asn=bgp_asn)
         return Device.conv_jinja_to_arr(rendered)
 
-    def gen_bgp_peer(state, desc, peer_ip, remote_as, ebgp_multihop, route_maps, source_interface, extended_next_hop):
+    def gen_bgp_peer(
+        state,
+        desc,
+        peer_ip,
+        remote_as,
+        ebgp_multihop,
+        route_maps,
+        source_interface,
+        extended_next_hop,
+    ):
         output = Template(j2templates.vyos_bgp_peer)
         rendered = output.render(
             state=state,
@@ -549,14 +559,16 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             if interfaces != None:
                 for interface in interfaces:
                     print(interface)
-                    to_deploy.append(Vyos.gen_int(
-                        interface["state"],
-                        interface["type"],
-                        interface["name"],
-                        interface["addrs"],
-                        interface["desc"],
-                        interface["firewall"]
-                    ))
+                    to_deploy.append(
+                        Vyos.gen_int(
+                            interface["state"],
+                            interface["type"],
+                            interface["name"],
+                            interface["addrs"],
+                            interface["desc"],
+                            interface["firewall"],
+                        )
+                    )
 
             wireguard_interfaces = device.get("wireguard_interfaces")
             if wireguard_interfaces != None:
@@ -600,7 +612,7 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
                         peer["ebgp_multihop"],
                         peer["route_maps"],
                         peer["source_interface"],
-                        peer["extended_next_hop"]
+                        peer["extended_next_hop"],
                     )
 
                     to_deploy.append(rendered)

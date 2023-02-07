@@ -1,4 +1,4 @@
-vyos_int ="""
+vyos_int = """
 
 {% if state == "absent" -%}
 delete interfaces {{ type }} {{ name }}
@@ -40,7 +40,7 @@ set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ f
 """
 
 
-vyos_wireguard_int ="""
+vyos_wireguard_int = """
 {% if state == "deleted" -%}
 delete interfaces {{ type }} {{ name }}
 
@@ -117,7 +117,6 @@ set interfaces {{ type }} {{ name }} peer {{ peer.name }} public-key '{{ peer.pu
 """
 
 
-
 vyos_ospf = """
 {% if ospf["ospf_redistribute"] is defined %}
 
@@ -156,7 +155,7 @@ set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 
 {% endif -%}
 
-{% endfor -%}"""                                   
+{% endfor -%}"""
 
 vyos_bgp_asn = """
 set protocols bgp local-as {{ bgp_asn }}
@@ -291,7 +290,7 @@ set protocols static route {{ network }} next-hop {{ nexthop }} distance {{ dist
 {% endif -%}
 """
 
-vyos_firewall  = """
+vyos_firewall = """
 {% for ruleset in firewalls -%}
 
 set firewall name {{ ruleset.name }} 
@@ -372,7 +371,7 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name
 
 {%endfor -%}"""
 
-vyos_groups="""
+vyos_groups = """
 set firewall group {{type}}-group {{ name }}
 set firewall group {{type}}-group {{ name }} description '{{ desc }}'
 {% for net in networks -%}
@@ -472,7 +471,7 @@ set service lldp legacy-protocols {{ protocol }}
 {% endfor -%}
 {% endif -%}"""
 
-edgeos_int  ="""
+edgeos_int = """
 {% for int in interfaces -%}
 
 {% if int.state == "absent" -%}
