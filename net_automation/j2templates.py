@@ -34,6 +34,7 @@ set firewall interface {{ name }} {{ fw.direction }} name '{{ fw.name }}'
 set firewall interface {{ name }} {{ fw.direction }} ipv6-name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
+{% endif -%}
 
 {% endif -%}
 """

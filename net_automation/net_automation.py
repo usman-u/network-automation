@@ -558,7 +558,6 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
             interfaces = device.get("interfaces")
             if interfaces != None:
                 for interface in interfaces:
-                    print(interface)
                     to_deploy.append(
                         Vyos.gen_int(
                             interface["state"],
