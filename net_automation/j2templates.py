@@ -25,15 +25,14 @@ set interfaces {{ type }} {{ name }} description '{{ desc }}'
 
 {% if firewall["ipv4-unicast"] %}
 {% for fw in firewall["ipv4-unicast"] -%}
-set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+set firewall interface {{ name }} {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
 
 {% if firewall["ipv6-unicast"] %}
 {% for fw in firewall["ipv6-unicast"] -%}
-set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+set firewall interface {{ name }} {{ fw.direction }} ipv6-name '{{ fw.name }}'
 {% endfor -%}
-{% endif -%}
 {% endif -%}
 
 {% endif -%}
@@ -66,13 +65,13 @@ set interfaces {{ type }} {{ name }} description '{{ desc }}'
 
 {% if firewall["ipv4-unicast"] %}
 {% for fw in firewall["ipv4-unicast"] -%}
-set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} name '{{ fw.name }}'
+set firewall interface {{ name }} {{ fw.direction }} name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
 
 {% if firewall["ipv6-unicast"] %}
 {% for fw in firewall["ipv6-unicast"] -%}
-set interfaces {{ type }} {{ name }} firewall {{ fw.direction }} ipv6-name '{{ fw.name }}'
+set firewall interface {{ name }} {{ fw.direction }} ipv6-name '{{ fw.name }}'
 {% endfor -%}
 {% endif -%}
 
@@ -158,7 +157,7 @@ set protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 {% endfor -%}"""
 
 vyos_bgp_asn = """
-set protocols bgp local-as {{ bgp_asn }}
+set protocols bgp system-as {{ bgp_asn }}
 """
 
 vyos_bgp_prefix = """
