@@ -237,22 +237,21 @@ set protocols bgp neighbor {{ peer_ip }} address-family ipv6-unicast route-map {
 """
 
 vyos_routemap = """
-{%- for map in route_maps -%}
-
-{%if map.desc is defined and map.desc|length -%}
-set policy route-map {{ map.name }} description '{{map.desc}}'
+{% if desc is defined and desc|length -%}
+set policy route-map {{ name }} description '{{ desc }}'
 {%endif-%}
 
-{%- for rule in map.rules -%}
+{%- for rule in rules -%}
 
-{%if rule.state == "absent" -%}
+{% if rule.state == "absent" or rule.state == "deleted" -%}
 delete policy route-map {{ map.name }} rule {{ rule.rule_no }}
 
 {% else -%}
-set policy route-map {{ map.name }} rule {{ rule.rule_no }} action {{ rule.action }}
-set policy route-map {{ map.name }} rule {{ rule.rule_no }} match {{ rule.match }}
-{%endif-%}
-{% endfor -%}{% endfor -%}"""
+set policy route-map {{ name }} rule {{ rule.rule_no }} action {{ rule.action }}
+set policy route-map {{ name }} rule {{ rule.rule_no }} match {{ rule.match }}
+{% endif -%}
+{% endfor -%}
+"""
 
 
 vyos_prefix_list = """

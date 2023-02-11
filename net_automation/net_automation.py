@@ -481,9 +481,9 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         )
         return Device.conv_jinja_to_arr(rendered)
 
-    def gen_route_map(route_maps):
+    def gen_route_map(name, desc, rules):
         output = Template(j2templates.vyos_routemap)
-        rendered = output.render(route_maps=route_maps)
+        rendered = output.render(name=name, desc=desc, rules=rules)
         return Device.conv_jinja_to_arr(rendered)
 
     def gen_prefix_list(name, desc, state, rules):
@@ -632,15 +632,26 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
                     to_deploy.append(rendered)
 
             route_maps = device.get("route_maps")
+
             if route_maps != None:
-                to_deploy.append(Vyos.gen_route_map(route_maps))
+                if route_maps["state"] == "replaced":
+                    to_deploy.append(["delete policy route-map"])
+
+                for map in route_maps["config"]:
+                    to_deploy.append(Vyos.gen_route_map(
+                        map["name"],
+                        map["desc"],
+                        map["rules"]
+                    ))
 
 
             prefix_lists = device.get("prefix_lists")
-            if prefix_lists["state"] == "replaced":             # if the state is replaced
-                to_deploy.append(["delete policy prefix-list"]) # append del to commands
 
             if prefix_lists["config"] != None:                  # if prefixlists exsits
+
+                if prefix_lists["state"] == "replaced":             # if the state is replaced
+                    to_deploy.append(["delete policy prefix-list"]) # append del to commands
+
                 for prefix_list in prefix_lists["config"]:
                     to_deploy.append(Vyos.gen_prefix_list(
                         prefix_list["name"],
@@ -651,10 +662,12 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
 
             prefix_lists6 = device.get("prefix_lists6")
-            if prefix_lists6["state"] == "replaced":             # if the state is replaced
-                to_deploy.append(["delete policy prefix-list6"]) # append del to commands
 
-            if prefix_lists6["config"] != None:                  # if prefixlists exsits
+            if prefix_lists6["config"] != None:                  # if prefixlists6 exsits
+
+                if prefix_lists6["state"] == "replaced":
+                    to_deploy.append(["delete policy prefix-list6"])
+
                 for prefix_list6 in prefix_lists6["config"]:
                     to_deploy.append(Vyos.gen_prefix_list6(
                         prefix_list6["name"],
@@ -666,9 +679,10 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
 
             ospf = device.get("ospf")
-            if ospf["state"] == "replaced":
-                to_deploy.append(["delete protocols ospf"])
+
             if ospf != None:
+                if ospf["state"] == "replaced":
+                    to_deploy.append(["delete protocols ospf"])
                 to_deploy.append(Vyos.gen_ospf(ospf["config"]))
 
             firewalls = device.get("firewalls")
