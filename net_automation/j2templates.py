@@ -194,6 +194,12 @@ set protocols bgp neighbor {{ peer_ip }} interface source-interface {{ source_in
 set protocols bgp neighbor {{ peer_ip }} interface remote-as {{ remote_as }}
 {% endif -%}
 
+
+{%if nexthop_self is defined and nexthop_self -%}
+set protocols bgp neighbor {{ peer_ip }} address-family ipv4-unicast nexhop-self
+{% endif -%}
+
+
 {%if extended_next_hop -%}
 set protocols bgp neighbor {{ peer_ip }} capability extended-nexthop
 {% endif -%}
@@ -249,23 +255,78 @@ set policy route-map {{ map.name }} rule {{ rule.rule_no }} match {{ rule.match 
 
 
 vyos_prefix_list = """
-{%- for list in prefix_lists -%}
+set policy prefix-list {{ name }}
 
-{%if list.desc is defined and list.desc|length -%}
-set policy prefix-list {{ list.name }} description '{{ list.desc }}'
-{%endif-%}
+{% if desc is defined and desc|length -%}
+set policy prefix-list {{ name }} description '{{ desc }}'
+{% endif -%}
 
-{%- for rule in list.rules -%}
+{%- for rule in rules -%}
 
-{%if rule.state == "absent" -%}
-delete policy prefix-list {{ list.name }} rule {{ rule.rule_no }}
+{% if rule.state == "absent" or state == "deleted" -%}
+delete policy prefix-list {{ name }} rule {{ rule.rule_no }}
 
 {% else -%}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} action {{ rule.action }}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} {{ rule.match[0]["length"] }}
-set policy prefix-list {{ list.name }} rule {{ rule.rule_no }} prefix {{ rule.match[0]["prefix"] }}
+
+
+set policy prefix-list {{ name }} rule {{ rule.rule_no }} action {{ rule.action }}
+
+
+{% if rule.desc is defined and rule.desc|length -%}
+set policy prefix-list {{ name }} rule {{ rule.rule_no }} description '{{ rule.desc }}'
+{% endif -%}
+
+{% if rule["match"]["le"] is defined and rule["match"]["le"] is not none -%}
+set policy prefix-list {{ name }} rule {{ rule.rule_no }} le {{ rule["match"]["le"] }}
+{% endif -%}
+
+{% if rule["match"]["ge"] is defined and rule["match"]["ge"] is not none -%}
+set policy prefix-list {{ name }} rule {{ rule.rule_no }} ge {{ rule["match"]["ge"] }}
+{% endif -%}
+
+set policy prefix-list {{ name }} rule {{ rule.rule_no }} prefix {{ rule["match"]["prefix"] }}
+
 {%endif-%}
-{% endfor -%}{% endfor -%}"""
+
+{% endfor -%}
+"""
+
+vyos_prefix_list6 = """
+set policy prefix-list6 {{ name }}
+
+{% if desc is defined and desc|length -%}
+set policy prefix-list6 {{ name }} description '{{ desc }}'
+{% endif -%}
+
+{%- for rule in rules -%}
+
+{% if rule.state == "absent" or state == "deleted" -%}
+delete policy prefix-list6 {{ name }} rule {{ rule.rule_no }}
+
+{% else -%}
+
+
+set policy prefix-list6 {{ name }} rule {{ rule.rule_no }} action {{ rule.action }}
+
+
+{% if rule.desc is defined and rule.desc|length -%}
+set policy prefix-list6 {{ name }} rule {{ rule.rule_no }} description '{{ rule.desc }}'
+{% endif -%}
+
+{% if rule["match"]["le"] is defined and rule["match"]["le"] is not none -%}
+set policy prefix-list6 {{ name }} rule {{ rule.rule_no }} le {{ rule["match"]["le"] }}
+{% endif -%}
+
+{% if rule["match"]["ge"] is defined and rule["match"]["ge"] is not none -%}
+set policy prefix-list6 {{ name }} rule {{ rule.rule_no }} ge {{ rule["match"]["ge"] }}
+{% endif -%}
+
+set policy prefix-list6 {{ name }} rule {{ rule.rule_no }} prefix {{ rule["match"]["prefix"] }}
+
+{%endif-%}
+
+{% endfor -%}
+"""
 
 
 vyos_static = """
