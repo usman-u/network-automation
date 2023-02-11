@@ -560,7 +560,9 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
             groups = device.get("groups")
             if groups != None:
-                for group in groups:
+                if groups["state"] == "replaced":
+                    to_deploy.append(["delete firewall group"])
+                for group in groups["config"]:
                     rendered = Vyos.gen_groups(
                         group["state"],
                         group["name"],
