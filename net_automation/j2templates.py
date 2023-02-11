@@ -118,18 +118,19 @@ set interfaces {{ type }} {{ name }} peer {{ peer.name }} public-key '{{ peer.pu
 
 
 vyos_ospf = """
-{% if ospf["ospf_redistribute"] is defined %}
+{% if ospf["ospf_redistribute"] -%}
+
 
 {% for redis in ospf["ospf_redistribute"] %}
 
-{% if redis.state == "present" %}
+{% if redis.state == "present" -%}
 set protocols ospf redistribute {{ redis.redistribute }}
 
-{% if redis.route_map is defined and redis.route_map|length > 1 %}
+{% if redis.route_map is defined and redis.route_map|length > 1 -%}
 set protocols ospf redistribute {{ redis.redistribute }} route-map {{ redis.route_map }}
 {% endif %}
 
-{% elif redis.state == "absent"%}
+{% elif redis.state == "absent" -%}
 delete protocol ospf redistribute {{ redis.redistribute }}
 {% endif %}
 
@@ -147,7 +148,7 @@ delete protocols ospf area 0 parameters router-id
 
 {% for net in ospf["ospf_networks"] -%}
 
-{% if net.state == "absent" -%}
+{% if net.state == "absent" or net.state == "deleted" -%}
 delete protocols ospf area {{ net.area }} network {{ net.subnet }}{{ net.mask }}
 
 {% else -%}

@@ -666,8 +666,10 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
 
             ospf = device.get("ospf")
+            if ospf["state"] == "replaced":
+                to_deploy.append(["delete protocols ospf"])
             if ospf != None:
-                to_deploy.append(Vyos.gen_ospf(ospf))
+                to_deploy.append(Vyos.gen_ospf(ospf["config"]))
 
             firewalls = device.get("firewalls")
             if firewalls != None:
