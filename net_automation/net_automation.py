@@ -513,9 +513,14 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         )
         return Device.conv_jinja_to_arr(rendered)
 
-    def gen_firewalls(firewalls):
+    def gen_firewalls(name, state, default_action, rules):
         output = Template(j2templates.vyos_firewall)
-        rendered = output.render(firewalls=firewalls)
+        rendered = output.render(name=name, state=state, default_action=default_action, rules=rules)
+        return Device.conv_jinja_to_arr(rendered)
+
+    def gen_firewalls6(name, state, default_action, rules):
+        output = Template(j2templates.vyos_firewall6)
+        rendered = output.render(name=name, state=state, default_action=default_action, rules=rules)
         return Device.conv_jinja_to_arr(rendered)
 
     def gen_groups(state, name, type, desc, networks):
@@ -687,9 +692,38 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
                     to_deploy.append(["delete protocols ospf"])
                 to_deploy.append(Vyos.gen_ospf(ospf["config"]))
 
+
             firewalls = device.get("firewalls")
+
             if firewalls != None:
-                to_deploy.append(Vyos.gen_firewalls(firewalls))
+                if firewalls["state"] == "replaced":
+                    to_deploy.append(["delete firewall name"])
+
+                for fw in firewalls["config"]:
+                    print(fw)
+                    to_deploy.append(Vyos.gen_firewalls(
+                        fw["name"],
+                        fw["state"],
+                        fw["default_action"],
+                        fw["rules"]
+                    )
+                )
+
+
+            firewalls6 = device.get("firewalls6")
+
+            if firewalls6 != None:
+                if firewalls6["state"] == "replaced":
+                    to_deploy.append(["delete firewall ipv6-name"])
+
+                for fw6 in firewalls6["config"]:
+                    to_deploy.append(Vyos.gen_firewalls6(
+                        fw6["name"],
+                        fw6["state"],
+                        fw6["default_action"],
+                        fw6["rules"]
+                    )
+                )
 
             static_routes = device.get("static")
             if static_routes != None:

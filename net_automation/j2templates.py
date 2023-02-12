@@ -352,21 +352,20 @@ set protocols static route {{ network }} next-hop {{ nexthop }} distance {{ dist
 """
 
 vyos_firewall = """
-{% for ruleset in firewalls -%}
 
-set firewall name {{ ruleset.name }} 
-set firewall name {{ ruleset.name }} default-action '{{ ruleset.default_action }}'
+set firewall name {{ name }} 
+set firewall name {{ name }} default-action '{{ default_action }}'
 
-{% for rule in ruleset.rules -%}
+{% for rule in rules -%}
 
 {% if rule.state == "absent" -%}
-delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }}
+delete firewall name {{ name }} rule {{ rule.rule_no }}
 {% else -%}
 
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} action '{{ rule.action }}'
+set firewall name {{ name }} rule {{ rule.rule_no }} action '{{ rule.action }}'
 
 {% if rule.desc is defined and rule.desc|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rule.desc }}' 
+set firewall name {{ name }} rule {{ rule.rule_no }} description '{{ rule.desc }}' 
 {%endif -%}
 
 {% if rule.dest is defined -%}
@@ -374,15 +373,15 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} description '{{ rul
 {% for d in rule.dest -%}
 
 {% if d["address"] is defined and d["address"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination address "{{ d['address'] }}"
+set firewall name {{ name }} rule {{ rule.rule_no }} destination address "{{ d['address'] }}"
 {% endif -%}
 
 {% if d['port'] is defined and d['port']|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination port "{{ d['port'] }}"
+set firewall name {{ name }} rule {{ rule.rule_no }} destination port "{{ d['port'] }}"
 {% endif -%}
 
 {% if d['group'] is defined and d['group']|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {{ d['group'] }}
+set firewall name {{ name }} rule {{ rule.rule_no }} destination group {{ d['group'] }}
 {% endif -%}
 
 {% endfor-%}
@@ -395,15 +394,15 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} destination group {
 {% for s in rule.source -%}
 
 {% if s["address"] is defined and s["address"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source address "{{ s['address'] }}"
+set firewall name {{ name }} rule {{ rule.rule_no }} source address "{{ s['address'] }}"
 {% endif -%}
 
 {% if s["port"] is defined and s["port"]|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
+set firewall name {{ name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
 {% endif -%}
 
 {% if s['group'] is defined and s['group']|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source group {{ s['group'] }}
+set firewall name {{ name }} rule {{ rule.rule_no }} source group {{ s['group'] }}
 {% endif -%}
 
 {% endfor-%}
@@ -411,7 +410,7 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} source group {{ s['
 {%endif -%}
 
 {% if rule.protocol is defined and rule.protocol|length -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
+set firewall name {{ name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
 {%endif -%}
 
 
@@ -419,9 +418,9 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} protocol '{{ rule.p
 
 {% for state in rule.states -%}
 {% if state.status == "absent" -%}
-delete firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
+delete firewall name {{ name }} rule {{ rule.rule_no }} state {{ state.name }} enable
 {% else -%}
-set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name }} enable
+set firewall name {{ name }} rule {{ rule.rule_no }} state {{ state.name }} enable
 {% endif -%}
 {% endfor -%}
 
@@ -430,7 +429,87 @@ set firewall name {{ ruleset.name }} rule {{ rule.rule_no }} state {{ state.name
 
 {% endfor -%}
 
-{%endfor -%}"""
+"""
+
+
+vyos_firewall6 = """
+set firewall ipv6-name {{ name }} 
+set firewall ipv6-name {{ name }} default-action '{{ default_action }}'
+
+{% for rule in rules -%}
+
+{% if rule.state == "absent" -%}
+delete firewall ipv6-name {{ name }} rule {{ rule.rule_no }}
+{% else -%}
+
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} action '{{ rule.action }}'
+
+{% if rule.desc is defined and rule.desc|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} description '{{ rule.desc }}' 
+{%endif -%}
+
+{% if rule.dest is defined -%}
+
+{% for d in rule.dest -%}
+
+{% if d["address"] is defined and d["address"]|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} destination address "{{ d['address'] }}"
+{% endif -%}
+
+{% if d['port'] is defined and d['port']|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} destination port "{{ d['port'] }}"
+{% endif -%}
+
+{% if d['group'] is defined and d['group']|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} destination group {{ d['group'] }}
+{% endif -%}
+
+{% endfor-%}
+
+{% endif -%}	
+
+
+{% if rule.source is defined and rule.source|length -%}
+
+{% for s in rule.source -%}
+
+{% if s["address"] is defined and s["address"]|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} source address "{{ s['address'] }}"
+{% endif -%}
+
+{% if s["port"] is defined and s["port"]|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} source port "{{ s['port'] }}"
+{% endif -%}
+
+{% if s['group'] is defined and s['group']|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} source group {{ s['group'] }}
+{% endif -%}
+
+{% endfor-%}
+
+{%endif -%}
+
+{% if rule.protocol is defined and rule.protocol|length -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} protocol '{{ rule.protocol }}' 
+{%endif -%}
+
+
+{% if rule.states is defined -%}
+
+{% for state in rule.states -%}
+{% if state.status == "absent" -%}
+delete firewall ipv6-name {{ name }} rule {{ rule.rule_no }} state {{ state.name }} enable
+{% else -%}
+set firewall ipv6-name {{ name }} rule {{ rule.rule_no }} state {{ state.name }} enable
+{% endif -%}
+{% endfor -%}
+
+{% endif -%}
+{% endif -%}
+
+{% endfor -%}
+"""
+
 
 vyos_groups = """
 set firewall group {{type}}-group {{ name }}
