@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from discord_webhook import DiscordWebhook
 from difflib import Differ
 import requests
+import json
 import textfsm
 import time
 
@@ -28,6 +29,8 @@ class Device:
         self.use_keys = self.validate_use_keys(kwargs.get("use_keys"))
         self.key_file = kwargs.get("key_file")
         self.secret = kwargs.get("secret")
+        self.url = kwargs.get("url")
+        self.key = kwargs.get("key")
 
         # SSH dict for netmiko
         self.SSH_data = {
@@ -51,8 +54,9 @@ class Device:
         return False
 
     def validate_is_string(self, inp):
-        if type(inp) != str:
-            raise ValueError("Input is Not String. Check device parameters")
+        if inp != None:
+            if type(inp) != str:
+                raise ValueError("Input is Not String. Check device parameters")
         return inp  # returns inp if the input is valid (string)
 
     def validate_use_keys(self, inp):
@@ -269,18 +273,115 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
     def get_ospf_neighbors(self):
         return self.SSHConnection.send_command("show ip ospf neighbor")
 
-    def get_bgp_summary(self):
-        raw = self.SSHConnection.send_command("show ip bgp summary")
+    def get_bgp_peers(self):
+        """GraphQL API Call: ShowNeighborsBgp. Returns a list of BGP peers (equivalent to 'show ip bgp summary')"""
+        query = f"""
+    {{
+        ShowNeighborsBgp 
+        (data: 
+            {{
+                key: "{self.key}", 
+                family: "inet"
+            }}
+        ) 
+        {{
+            success
+            errors
+            data {{ result }}
+        }}
+    }}
+"""
+        r = requests.post(self.url, json={"query": query}, verify=False)
+        result = json.loads(r.text)
+        return result["data"]["ShowNeighborsBgp"]["data"]["result"]["peers"]
 
-        with open("vyosbgp.template") as template:
-            fsm = textfsm.TextFSM(template)
-            result = fsm.ParseText(raw)
+    def get_bgp_peer(self, peer_ip):
+        """
+        GraphQL API Call: ShowNeighborsBgp. Returns details about one peer (equivalent to show ip bgp neighbor fe80::abcd)
+        
+        :param str peer_ip: ipv4/v6 address of the peer (e.g. fe80::abcd, 172.22.132.169)
+        """
+        query = f"""{{
+            ShowNeighborsBgp (data: 
+                {{
+                    key: "{self.key}", 
+                    family: "inet"
+                    peer: "{peer_ip}"
+                }}
+                        ) 
+                        {{
+                            success
+                            errors
+                            data {{ result }}
+                        }}
+                    }}
+"""
+        r = requests.post(self.url, json={"query": query}, verify=False)
+        result = json.loads(r.text)
+        return result["data"]["ShowNeighborsBgp"]["data"]["result"]
 
+    def get_all_routes(self, family="inet"):
+        """
+        GraphQL API Call: ShowRoute. Shows all routes in the route table (equivalent to 'show ip route')
+        
+        :param str family: address-family of the routes (e.g. inet, inet6). Default is inet
+        """
+        query = f"""{{
+            ShowRoute (data: 
+                {{
+                    key: "{self.key}", 
+                    family: "{family}"
+                }}
+                        ) 
+                        {{
+                            success
+                            errors
+                            data {{ result }}
+                        }}
+                    }}
+"""
+        r = requests.post(self.url, json={"query": query}, verify=False)
+        result = json.loads(r.text)
+        return result["data"]["ShowRoute"]["data"]["result"]
+
+    def get_route_summary(self, family="inet"):
+        query = f"""{{
+            ShowSummaryRoute (data: 
+                {{
+                    key: "{self.key}", 
+                    family: "{family}"
+                }}
+                        ) 
+                        {{
+                            success
+                            errors
+                            data {{ result }}
+                        }}
+                    }}
+"""
+        r = requests.post(self.url, json={"query": query}, verify=False)
+        result = json.loads(r.text)
+        return result["data"]["ShowSummaryRoute"]["data"]["result"]
+
+    def get_interfaces(self, family="inet"):
+        print(self.key)
+        query = f"""{{
+            ShowInterfaces (data: 
+                {{
+                    key: "{self.key}", 
+                }}
+                        ) 
+                        {{
+                            success
+                            errors
+                            data {{ result }}
+                        }}
+                    }}
+"""
+        r = requests.post(self.url, json={"query": query}, verify=False)
+        result = json.loads(r.text)
         return result
 
-    def get_interfaces(self):
-        """Gets all interfaces on the device, including type, name, status, and description"""
-        return self.SSHConnection.send_command("show interfaces", use_textfsm=True)
 
     def get_interface_detail(self, type, interface):
         """Gets Linux style details of the specified interface, including addreses, RX, TX, etc."""
@@ -942,7 +1043,6 @@ class EdgeOS(Vyos):  # Vyos/EdgeOS specific commands
             print("Committing Changes")
             EdgeOS.commit(router)
             print("Changes Committed, Success")
-
 
 class Cisco_IOS(Device):  # cisco specific commands
     # inherits all methods and attributes from MAIN class
