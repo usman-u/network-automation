@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "network-automation-usman-u"
-version = "0.1.18"
+version = "0.1.19"
 description = "An ansible-like network automation framework."
 authors = ["Usman <usman@usman.network>"]
 

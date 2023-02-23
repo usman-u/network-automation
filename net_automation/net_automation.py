@@ -272,6 +272,12 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
 
     def get_ospf_neighbors(self):
         return self.SSHConnection.send_command("show ip ospf neighbor")
+    
+    def get_bgp_peer_received_routes(self, peer_ip):
+        return self.SSHConnection.send_command(f"show ip bgp neighbor {peer_ip} routes")
+    
+    def get_bgp_peer_advertised_routes(self, peer_ip):
+        return self.SSHConnection.send_command(f"show ip bgp neighbor {peer_ip} advertised-routes")
 
     def get_bgp_peers(self):
         """GraphQL API Call: ShowNeighborsBgp. Returns a list of BGP peers (equivalent to 'show ip bgp summary')"""
