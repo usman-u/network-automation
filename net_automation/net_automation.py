@@ -1,8 +1,5 @@
 from jinja2 import Template
 from netmiko import Netmiko, ConnectHandler
-from net_automation import j2templates
-
-# import j2templates
 import datetime
 import os
 import yaml
@@ -16,6 +13,8 @@ import json
 import textfsm
 import time
 
+import validators
+import j2templates
 
 class Device:
     # attributes are standard for netmiko functionality
@@ -350,6 +349,55 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         result = json.loads(r.text)
         return result["data"]["ShowRoute"]["data"]["result"]
 
+    def get_route(self, prefix, family="inet"):
+        """
+        GraphQL API Call: ShowRoute. Shows a particular route in the route table (equivalent to 'show ip route 172.23.0.53')
+        
+        :param str prefix: prefix to  (e.g. 172.23.0.53).
+        :param str family: address-family of the routes (e.g. inet, inet6). Default is inet
+        :return: If successful, the result of the ShowRoute call. Otherwise, an error message.
+        :rtype: str
+        """
+
+        if not validators.is_valid_network(prefix):
+            return f"Invalid prefix: {prefix}"
+        
+        if family not in ["inet", "inet6"]:
+            return f"Invalid address family: {family}. Either 'inet' or 'inet6' should be used"
+
+        query = """
+        query ShowRoute($key: String!, $family: String!, $prefix: String!) {
+            ShowRoute(data: {key: $key, family: $family, net: $prefix}) {
+            success
+            errors
+            data {result}
+            }
+        }
+        """
+
+        variables = {"key": self.key, "family": family, "prefix": prefix}
+        try:
+            r = requests.post(self.url, json={"query": query, "variables": variables}, verify=False)
+            r.raise_for_status()
+            result = r.json()
+
+            # if not successful, return errors
+            if not result["data"]["ShowRoute"]["success"]:
+                return ValueError(result["data"]["ShowRoute"]["errors"][0])
+            
+            # if no route result
+            if result["data"]["ShowRoute"]["data"]["result"] == []:
+                return f"No route found for {prefix}"
+
+            # if no errors
+            return result["data"]["ShowRoute"]["data"]["result"]
+
+        except requests.exceptions.ConnectionError as e:
+            return f"Error connecting to server: \n{str(e)}"
+        
+        except ValueError as e:
+            return str(e)
+        
     def get_route_summary(self, family="inet"):
         query = f"""{{
             ShowSummaryRoute (data: 
@@ -369,24 +417,8 @@ class Vyos(Device):  # Vyos/EdgeOS specific commands
         result = json.loads(r.text)
         return result["data"]["ShowSummaryRoute"]["data"]["result"]
 
-    def get_interfaces(self, family="inet"):
-        print(self.key)
-        query = f"""{{
-            ShowInterfaces (data: 
-                {{
-                    key: "{self.key}", 
-                }}
-                        ) 
-                        {{
-                            success
-                            errors
-                            data {{ result }}
-                        }}
-                    }}
-"""
-        r = requests.post(self.url, json={"query": query}, verify=False)
-        result = json.loads(r.text)
-        return result
+    def get_interfaces(self):
+        return self.SSHConnection.send_command("show interfaces", use_textfsm=True)
 
 
     def get_interface_detail(self, type, interface):
