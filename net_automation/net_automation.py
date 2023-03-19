@@ -13,8 +13,8 @@ import json
 import textfsm
 import time
 
-import validators
-import j2templates
+# import validators
+# import j2templates
 
 class Device:
     # attributes are standard for netmiko functionality
